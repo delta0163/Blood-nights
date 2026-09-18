@@ -2,40 +2,41 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Mini 3D Shooter</title>
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <title>2.5D FPS</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
-<div id="game">
-    <canvas id="screen"></canvas>
+<canvas id="game"></canvas>
 
-    <div id="hud">
-        <div class="health">HP: <span id="hp">100</span></div>
-        <div class="ammo">AMMO: <span id="ammo">30</span></div>
+<!-- Прицел -->
+<div id="crosshair">+</div>
+
+<!-- Оружие -->
+<div id="weaponName">КУЛАКИ</div>
+
+<!-- Кнопки -->
+<div id="controls">
+
+    <div id="joystick">
+        <div id="stick"></div>
     </div>
 
-    <div id="crosshair">+</div>
+    <button id="shootButton">ОГОНЬ</button>
 
-    <div id="weapon">
-        <div class="gun"></div>
-    </div>
+    <button id="interactButton">E</button>
 
-    <div id="message"></div>
+    <button id="weaponButton">ОРУЖИЕ</button>
 
-    <div id="mobileControls">
-        <div class="movement">
-            <button id="forward">▲</button>
-            <button id="left">◀</button>
-            <button id="back">▼</button>
-            <button id="right">▶</button>
-        </div>
-
-        <button id="shoot">🔫</button>
-    </div>
 </div>
 
+<div id="message"></div>
+
 <script src="game.js"></script>
+
 </body>
 </html>
