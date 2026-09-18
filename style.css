@@ -2,6 +2,7 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+    touch-action: none;
 }
 
 html,
@@ -10,182 +11,122 @@ body {
     height: 100%;
     overflow: hidden;
     background: #000;
-    font-family: monospace;
+    font-family: Arial, sans-serif;
 }
 
 #game {
-    position: relative;
+    position: fixed;
+    left: 0;
+    top: 0;
+
     width: 100vw;
     height: 100vh;
-    overflow: hidden;
-    background: #000;
-}
 
-#screen {
+    background: #111;
     display: block;
-    width: 100%;
-    height: 100%;
-    image-rendering: pixelated;
 }
 
 #hud {
-    position: absolute;
-    left: 20px;
-    bottom: 20px;
-    color: white;
-    font-size: 22px;
-    font-weight: bold;
-    text-shadow: 3px 3px #000;
-    z-index: 5;
-}
-
-.health {
-    color: #ff3333;
-}
-
-.ammo {
-    color: #ffd43b;
-    margin-top: 8px;
-}
-
-#crosshair {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    color: white;
-    font-size: 30px;
-    font-weight: bold;
-    text-shadow: 2px 2px #000;
-    z-index: 4;
-}
-
-#weapon {
-    position: absolute;
-    bottom: -20px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 180px;
-    height: 170px;
-    pointer-events: none;
-    z-index: 3;
-}
-
-.gun {
-    position: absolute;
-    left: 50%;
-    bottom: 0;
-    transform: translateX(-50%);
-    width: 75px;
-    height: 130px;
-    background: #333;
-    border: 5px solid #111;
-    box-shadow:
-        -35px 45px 0 #222,
-        35px 45px 0 #222;
-}
-
-.gun::before {
-    content: "";
-    position: absolute;
-    width: 35px;
-    height: 70px;
+    position: fixed;
+    top: 15px;
     left: 15px;
-    top: -60px;
-    background: #555;
-    border: 5px solid #111;
-}
 
-.gun::after {
-    content: "";
-    position: absolute;
-    width: 20px;
-    height: 35px;
-    left: 23px;
-    bottom: -30px;
-    background: #111;
-}
-
-#message {
-    position: absolute;
-    top: 45%;
-    left: 50%;
-    transform: translate(-50%, -50%);
     color: white;
-    font-size: 35px;
+    font-size: 18px;
     font-weight: bold;
-    text-align: center;
-    text-shadow: 4px 4px #000;
-    display: none;
-    z-index: 20;
-}
 
-#mobileControls {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
+    text-shadow: 2px 2px #000;
+
     z-index: 10;
 }
 
-button {
-    border: 3px solid #777;
-    background: rgba(30, 30, 30, 0.65);
-    color: white;
-    font-size: 25px;
-    border-radius: 10px;
-    touch-action: none;
-    user-select: none;
+#enemyHealth {
+    margin-top: 6px;
 }
 
-.movement {
-    position: absolute;
-    bottom: 25px;
-    left: 25px;
-    width: 170px;
-    height: 170px;
+#combo {
+    margin-top: 6px;
+    color: #ffd000;
+}
+
+#crosshair {
+    position: fixed;
+
+    left: 50%;
+    top: 50%;
+
+    transform: translate(-50%, -50%);
+
+    color: white;
+
+    font-size: 28px;
+    font-weight: bold;
+
+    z-index: 10;
+
     pointer-events: none;
 }
 
-.movement button {
-    position: absolute;
-    width: 55px;
-    height: 55px;
-    pointer-events: auto;
+#message {
+    position: fixed;
+
+    left: 50%;
+    top: 70px;
+
+    transform: translateX(-50%);
+
+    color: white;
+
+    font-size: 14px;
+    text-align: center;
+
+    text-shadow: 2px 2px #000;
+
+    z-index: 10;
+
+    pointer-events: none;
 }
 
-#forward {
-    left: 57px;
-    top: 0;
-}
+#attackButton {
+    position: fixed;
 
-#left {
-    left: 0;
-    top: 57px;
-}
-
-#back {
-    left: 57px;
-    top: 114px;
-}
-
-#right {
-    right: 0;
-    top: 57px;
-}
-
-#shoot {
-    position: absolute;
     right: 30px;
-    bottom: 50px;
-    width: 90px;
-    height: 90px;
+    bottom: 30px;
+
+    width: 110px;
+    height: 110px;
+
     border-radius: 50%;
-    font-size: 35px;
-    pointer-events: auto;
+
+    border: 3px solid white;
+
+    background: #333;
+    color: white;
+
+    font-size: 17px;
+    font-weight: bold;
+
+    z-index: 20;
+
+    -webkit-tap-highlight-color: transparent;
 }
 
-@media (min-width: 800px) {
-    #mobileControls {
-        display: none;
+#attackButton:active {
+    background: #777;
+    transform: scale(0.92);
+}
+
+@media (max-width: 600px) {
+
+    #attackButton {
+        width: 95px;
+        height: 95px;
+
+        right: 20px;
+        bottom: 20px;
+    }
+
+    #hud {
+        font-size: 15px;
     }
 }
