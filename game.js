@@ -2,225 +2,346 @@ const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
 const attackButton = document.getElementById("attackButton");
-
-const comboText = document.getElementById("combo");
-const enemyHealthText = document.getElementById("enemyHealth");
+const comboText = document.getElementById("comboText");
 
 
-// =========================
+// ==================================================
 // CANVAS
-// =========================
+// ==================================================
 
 function resize() {
+
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+
 }
 
 window.addEventListener("resize", resize);
+
 resize();
 
 
-// =========================
+// ==================================================
 // ИГРОК
-// =========================
+// ==================================================
 
 const player = {
-    hp: 100
-};
-
-
-// =========================
-// МАНЕКЕН
-// =========================
-
-const enemy = {
-    hp: 100,
 
     x: 0,
     y: 0,
 
-    hitFlash: 0
+    speed: 3
+
 };
 
 
-// =========================
+// ==================================================
+// КАМЕРА
+// ==================================================
+
+const camera = {
+
+    x: 0,
+    y: 0
+
+};
+
+
+// ==================================================
+// ДВИЖЕНИЕ
+// ==================================================
+
+const keys = {
+
+    forward: false,
+    back: false,
+    left: false,
+    right: false
+
+};
+
+
+// Клавиатура для ПК
+
+window.addEventListener("keydown", function(e) {
+
+    if (e.code === "KeyW" || e.code === "ArrowUp") {
+        keys.forward = true;
+    }
+
+    if (e.code === "KeyS" || e.code === "ArrowDown") {
+        keys.back = true;
+    }
+
+    if (e.code === "KeyA" || e.code === "ArrowLeft") {
+        keys.left = true;
+    }
+
+    if (e.code === "KeyD" || e.code === "ArrowRight") {
+        keys.right = true;
+    }
+
+});
+
+
+window.addEventListener("keyup", function(e) {
+
+    if (e.code === "KeyW" || e.code === "ArrowUp") {
+        keys.forward = false;
+    }
+
+    if (e.code === "KeyS" || e.code === "ArrowDown") {
+        keys.back = false;
+    }
+
+    if (e.code === "KeyA" || e.code === "ArrowLeft") {
+        keys.left = false;
+    }
+
+    if (e.code === "KeyD" || e.code === "ArrowRight") {
+        keys.right = false;
+    }
+
+});
+
+
+// ==================================================
+// МОБИЛЬНОЕ ДВИЖЕНИЕ
+// ==================================================
+
+// На этом этапе оставляем простое управление.
+// Его можно заменить твоим предыдущим D-Pad,
+// если он уже был в твоей версии.
+
+
+// ==================================================
+// КУЛАКИ
+// ==================================================
+
+let fistAnimation = {
+
+    active: false,
+
+    // 0 = нет
+    // 1 = правый
+    // 2 = левый
+    // 3 = аперкот
+
+    type: 0,
+
+    time: 0,
+
+    duration: 180
+};
+
+
+// ==================================================
 // КОМБО
-// =========================
+// ==================================================
 
-// 0 = нет комбо
-// 1 = правый
-// 2 = левый
-// 3 = аперкот
-
-let comboStep = 0;
+let combo = 0;
 
 let comboTimer = 0;
 
-const COMBO_TIME = 900;
+const comboDelay = 700;
 
 
-// =========================
-// УДАР
-// =========================
-
-let attackAnimation = 0;
-let currentAttack = "";
-
-let canAttack = true;
-
-
-// =========================
-// УПРАВЛЕНИЕ
-// =========================
+// ==================================================
+// КНОПКА УДАРА
+// ==================================================
 
 attackButton.addEventListener("pointerdown", function(e) {
 
     e.preventDefault();
 
-    attack();
+    punch();
 
 });
 
 
-// Можно также играть мышкой/клавишей
+// Для теста на ПК можно нажимать Space
 
 window.addEventListener("keydown", function(e) {
 
-    if (e.code === "Space" || e.code === "KeyZ") {
-        attack();
+    if (e.code === "Space") {
+
+        punch();
+
     }
 
 });
 
 
-// =========================
-// АТАКА
-// =========================
+// ==================================================
+// УДАР
+// ==================================================
 
-function attack() {
+function punch() {
 
-    if (!canAttack) return;
-
-    canAttack = false;
-
-    // Проверяем время комбо
+    // Если прошло слишком много времени,
+    // начинаем комбинацию заново.
 
     if (comboTimer <= 0) {
-        comboStep = 0;
-    }
 
-
-    // Следующий удар
-
-    comboStep++;
-
-    if (comboStep > 3) {
-        comboStep = 1;
-    }
-
-
-    if (comboStep === 1) {
-
-        currentAttack = "RIGHT";
-
-        comboText.textContent = "КОМБО: ПРАВЫЙ";
-
-        damageEnemy(15);
-
-    }
-
-    else if (comboStep === 2) {
-
-        currentAttack = "LEFT";
-
-        comboText.textContent = "КОМБО: ЛЕВЫЙ";
-
-        damageEnemy(20);
-
-    }
-
-    else if (comboStep === 3) {
-
-        currentAttack = "UPPER";
-
-        comboText.textContent = "КОМБО: АПЕРКОТ!";
-
-        damageEnemy(35);
+        combo = 0;
 
     }
 
 
-    attackAnimation = 1;
+    combo++;
+
+    if (combo > 3) {
+
+        combo = 1;
+
+    }
 
 
-    // Следующий удар можно делать после анимации
+    // Первый удар
 
-    setTimeout(() => {
+    if (combo === 1) {
 
-        canAttack = true;
+        fistAnimation.type = 1;
 
-    }, 220);
+        showComboText("ПРАВЫЙ");
+
+    }
 
 
-    // Таймер комбо
+    // Второй удар
 
-    comboTimer = COMBO_TIME;
+    else if (combo === 2) {
+
+        fistAnimation.type = 2;
+
+        showComboText("ЛЕВЫЙ");
+
+    }
+
+
+    // Третий удар
+
+    else if (combo === 3) {
+
+        fistAnimation.type = 3;
+
+        showComboText("АПЕРКОТ!");
+
+    }
+
+
+    fistAnimation.active = true;
+
+    fistAnimation.time = 0;
+
+    comboTimer = comboDelay;
 
 }
 
 
-// =========================
-// УРОН
-// =========================
+// ==================================================
+// ТЕКСТ
+// ==================================================
 
-function damageEnemy(damage) {
+let textTimer = 0;
 
-    enemy.hp -= damage;
+function showComboText(text) {
 
-    if (enemy.hp < 0) {
-        enemy.hp = 0;
+    comboText.textContent = text;
+
+    comboText.style.opacity = "1";
+
+    textTimer = 350;
+
+}
+
+
+// ==================================================
+// ОБНОВЛЕНИЕ
+// ==================================================
+
+function update(delta) {
+
+
+    // ----------------------------
+    // ДВИЖЕНИЕ
+    // ----------------------------
+
+    if (keys.forward) {
+        player.y -= player.speed * delta / 16;
     }
 
-    enemy.hitFlash = 1;
+    if (keys.back) {
+        player.y += player.speed * delta / 16;
+    }
 
-    enemyHealthText.textContent =
-        "МАНЕКЕН: " + enemy.hp;
+    if (keys.left) {
+        player.x -= player.speed * delta / 16;
+    }
+
+    if (keys.right) {
+        player.x += player.speed * delta / 16;
+    }
 
 
-    if (enemy.hp <= 0) {
+    // ----------------------------
+    // КОМБО-ТАЙМЕР
+    // ----------------------------
 
-        comboText.textContent = "МАНЕКЕН ПОВАЛЕН!";
+    if (comboTimer > 0) {
 
-        setTimeout(resetEnemy, 1200);
+        comboTimer -= delta;
+
+    }
+
+    else {
+
+        combo = 0;
+
+    }
+
+
+    // ----------------------------
+    // АНИМАЦИЯ КУЛАКА
+    // ----------------------------
+
+    if (fistAnimation.active) {
+
+        fistAnimation.time += delta;
+
+        if (fistAnimation.time >= fistAnimation.duration) {
+
+            fistAnimation.active = false;
+
+            fistAnimation.type = 0;
+
+        }
+
+    }
+
+
+    // ----------------------------
+    // ТЕКСТ
+    // ----------------------------
+
+    if (textTimer > 0) {
+
+        textTimer -= delta;
+
+    }
+
+    else {
+
+        comboText.style.opacity = "0";
 
     }
 
 }
 
 
-// =========================
-// ВОЗРОЖДЕНИЕ МАНЕКЕНА
-// =========================
-
-function resetEnemy() {
-
-    enemy.hp = 100;
-
-    enemyHealthText.textContent =
-        "МАНЕКЕН: 100";
-
-    comboStep = 0;
-
-    comboTimer = 0;
-
-    comboText.textContent = "КОМБО: —";
-
-}
-
-
-// =========================
+// ==================================================
 // РИСОВАНИЕ
-// =========================
+// ==================================================
 
 function draw() {
 
@@ -228,21 +349,11 @@ function draw() {
     const h = canvas.height;
 
 
-    // =====================
+    // ==================================================
     // НЕБО
-    // =====================
+    // ==================================================
 
-    const sky = ctx.createLinearGradient(
-        0,
-        0,
-        0,
-        h / 2
-    );
-
-    sky.addColorStop(0, "#090909");
-    sky.addColorStop(1, "#292929");
-
-    ctx.fillStyle = sky;
+    ctx.fillStyle = "#101010";
 
     ctx.fillRect(
         0,
@@ -252,21 +363,11 @@ function draw() {
     );
 
 
-    // =====================
+    // ==================================================
     // ПОЛ
-    // =====================
+    // ==================================================
 
-    const floor = ctx.createLinearGradient(
-        0,
-        h / 2,
-        0,
-        h
-    );
-
-    floor.addColorStop(0, "#252525");
-    floor.addColorStop(1, "#050505");
-
-    ctx.fillStyle = floor;
+    ctx.fillStyle = "#252525";
 
     ctx.fillRect(
         0,
@@ -276,34 +377,11 @@ function draw() {
     );
 
 
-    // =====================
-    // СТЕНЫ
-    // =====================
-
-    ctx.fillStyle = "#333";
-
-    ctx.fillRect(
-        0,
-        h * 0.25,
-        w,
-        10
-    );
-
-    ctx.fillStyle = "#202020";
-
-    ctx.fillRect(
-        0,
-        h * 0.25 + 10,
-        w,
-        4
-    );
-
-
-    // =====================
+    // ==================================================
     // ПОЛОСЫ ПЕРСПЕКТИВЫ
-    // =====================
+    // ==================================================
 
-    ctx.strokeStyle = "#303030";
+    ctx.strokeStyle = "#353535";
 
     ctx.lineWidth = 2;
 
@@ -311,7 +389,7 @@ function draw() {
 
         const y =
             h / 2 +
-            (i * i) * 10;
+            i * i * 8;
 
         ctx.beginPath();
 
@@ -320,57 +398,57 @@ function draw() {
         ctx.lineTo(w, y);
 
         ctx.stroke();
+
     }
 
 
-    // =====================
+    // ==================================================
+    // СТЕНА
+    // ==================================================
+
+    ctx.fillStyle = "#303030";
+
+    ctx.fillRect(
+        0,
+        h * 0.25,
+        w,
+        10
+    );
+
+
+    // ==================================================
     // МАНЕКЕН
-    // =====================
+    // ==================================================
 
-    drawEnemy();
+    drawDummy();
 
 
-    // =====================
+    // ==================================================
     // КУЛАКИ
-    // =====================
+    // ==================================================
 
     drawFists();
+
 }
 
 
-// =========================
+// ==================================================
 // МАНЕКЕН
-// =========================
+// ==================================================
 
-function drawEnemy() {
+function drawDummy() {
 
     const w = canvas.width;
     const h = canvas.height;
 
-    const centerX = w / 2;
+    const x = w / 2;
 
-    const groundY = h * 0.78;
+    const ground = h * 0.80;
 
-    const scale = Math.min(w, h) / 500;
-
-    let bodyScale = scale;
-
-    if (enemy.hp <= 0) {
-        bodyScale = scale * 0.65;
-    }
+    const scale = Math.min(w, h) / 600;
 
 
-    // Вспышка попадания
-
-    if (enemy.hitFlash > 0) {
-
-        ctx.fillStyle = "#fff";
-
-    } else {
-
-        ctx.fillStyle = "#777";
-
-    }
+    ctx.fillStyle = "#777";
 
 
     // Голова
@@ -378,9 +456,9 @@ function drawEnemy() {
     ctx.beginPath();
 
     ctx.arc(
-        centerX,
-        groundY - 170 * bodyScale,
-        32 * bodyScale,
+        x,
+        ground - 190 * scale,
+        35 * scale,
         0,
         Math.PI * 2
     );
@@ -391,238 +469,87 @@ function drawEnemy() {
     // Тело
 
     ctx.fillRect(
-        centerX - 45 * bodyScale,
-        groundY - 135 * bodyScale,
-        90 * bodyScale,
-        120 * bodyScale
+        x - 45 * scale,
+        ground - 150 * scale,
+        90 * scale,
+        120 * scale
     );
 
 
     // Левая рука
 
     ctx.fillRect(
-        centerX - 75 * bodyScale,
-        groundY - 125 * bodyScale,
-        30 * bodyScale,
-        100 * bodyScale
+        x - 75 * scale,
+        ground - 145 * scale,
+        30 * scale,
+        100 * scale
     );
 
 
     // Правая рука
 
     ctx.fillRect(
-        centerX + 45 * bodyScale,
-        groundY - 125 * bodyScale,
-        30 * bodyScale,
-        100 * bodyScale
+        x + 45 * scale,
+        ground - 145 * scale,
+        30 * scale,
+        100 * scale
     );
 
 
     // Ноги
 
     ctx.fillRect(
-        centerX - 38 * bodyScale,
-        groundY - 15 * bodyScale,
-        28 * bodyScale,
-        110 * bodyScale
+        x - 35 * scale,
+        ground - 30 * scale,
+        25 * scale,
+        110 * scale
     );
 
     ctx.fillRect(
-        centerX + 10 * bodyScale,
-        groundY - 15 * bodyScale,
-        28 * bodyScale,
-        110 * bodyScale
+        x + 10 * scale,
+        ground - 30 * scale,
+        25 * scale,
+        110 * scale
     );
 
-
-    // Глаза
-
-    ctx.fillStyle = "#111";
-
-    ctx.fillRect(
-        centerX - 16 * bodyScale,
-        groundY - 180 * bodyScale,
-        8 * bodyScale,
-        8 * bodyScale
-    );
-
-    ctx.fillRect(
-        centerX + 8 * bodyScale,
-        groundY - 180 * bodyScale,
-        8 * bodyScale,
-        8 * bodyScale
-    );
-
-
-    // HP полоска
-
-    const barWidth = 130;
-
-    const hpWidth =
-        barWidth * (enemy.hp / 100);
-
-    ctx.fillStyle = "#111";
-
-    ctx.fillRect(
-        centerX - barWidth / 2,
-        groundY - 220 * bodyScale,
-        barWidth,
-        10
-    );
-
-    ctx.fillStyle = "#d00000";
-
-    ctx.fillRect(
-        centerX - barWidth / 2,
-        groundY - 220 * bodyScale,
-        hpWidth,
-        10
-    );
 }
 
 
-// =========================
-// КУЛАКИ
-// =========================
+// ==================================================
+// КУЛАК
+// ==================================================
 
-function drawFists() {
-
-    const w = canvas.width;
-    const h = canvas.height;
-
-
-    // Обычное положение
-
-    let leftX = w * 0.30;
-    let leftY = h * 0.88;
-
-    let rightX = w * 0.70;
-    let rightY = h * 0.88;
-
-
-    let leftSize = Math.min(w, h) * 0.10;
-    let rightSize = Math.min(w, h) * 0.10;
-
-
-    // =====================
-    // ПРАВЫЙ УДАР
-    // =====================
-
-    if (currentAttack === "RIGHT" && attackAnimation > 0) {
-
-        rightX = w * 0.52;
-        rightY = h * 0.60;
-
-        rightSize *= 1.25;
-    }
-
-
-    // =====================
-    // ЛЕВЫЙ УДАР
-    // =====================
-
-    if (currentAttack === "LEFT" && attackAnimation > 0) {
-
-        leftX = w * 0.48;
-        leftY = h * 0.60;
-
-        leftSize *= 1.25;
-    }
-
-
-    // =====================
-    // АПЕРКОТ
-    // =====================
-
-    if (currentAttack === "UPPER" && attackAnimation > 0) {
-
-        leftX = w * 0.43;
-        leftY = h * 0.53;
-
-        rightX = w * 0.57;
-        rightY = h * 0.53;
-
-        leftSize *= 1.2;
-        rightSize *= 1.2;
-    }
-
-
-    drawFist(
-        leftX,
-        leftY,
-        leftSize,
-        currentAttack === "LEFT" && attackAnimation > 0
-    );
-
-    drawFist(
-        rightX,
-        rightY,
-        rightSize,
-        currentAttack === "RIGHT" && attackAnimation > 0
-    );
-
-
-    // Апперкот двумя руками
-
-    if (currentAttack === "UPPER" && attackAnimation > 0) {
-
-        drawFist(
-            w * 0.43,
-            h * 0.55,
-            leftSize,
-            true
-        );
-
-        drawFist(
-            w * 0.57,
-            h * 0.55,
-            rightSize,
-            true
-        );
-    }
-}
-
-
-// =========================
-// РИСОВАНИЕ КУЛАКА
-// =========================
-
-function drawFist(x, y, size, active) {
+function drawFist(x, y, size, rotation) {
 
     ctx.save();
 
     ctx.translate(x, y);
 
-
-    if (active) {
-
-        ctx.scale(1.15, 1.15);
-
-    }
+    ctx.rotate(rotation);
 
 
-    // предплечье
+    // Рука
 
-    ctx.fillStyle = "#c58c67";
+    ctx.fillStyle = "#c88b68";
 
     ctx.fillRect(
-        -size * 0.28,
-        size * 0.15,
-        size * 0.56,
-        size * 0.75
+        -size * 0.25,
+        0,
+        size * 0.5,
+        size * 0.9
     );
 
 
-    // кулак
+    // Кулак
 
-    ctx.fillStyle = "#d59b73";
+    ctx.fillStyle = "#d99a75";
 
     ctx.beginPath();
 
     ctx.roundRect(
-        -size * 0.48,
-        -size * 0.45,
-        size * 0.96,
+        -size * 0.5,
+        -size * 0.4,
+        size,
         size * 0.65,
         size * 0.15
     );
@@ -630,85 +557,146 @@ function drawFist(x, y, size, active) {
     ctx.fill();
 
 
-    // пальцы
+    // Пальцы
 
-    ctx.fillStyle = "#b97958";
+    ctx.fillStyle = "#b97858";
 
     for (let i = 0; i < 4; i++) {
 
         ctx.fillRect(
-            -size * 0.38 + i * size * 0.20,
-            -size * 0.25,
-            size * 0.14,
-            size * 0.28
+            -size * 0.38 + i * size * 0.2,
+            -size * 0.22,
+            size * 0.13,
+            size * 0.25
         );
+
     }
 
 
     ctx.restore();
+
 }
 
 
-// =========================
-// UPDATE
-// =========================
+// ==================================================
+// КУЛАКИ НА ЭКРАНЕ
+// ==================================================
 
-function update(delta) {
+function drawFists() {
+
+    const w = canvas.width;
+    const h = canvas.height;
+
+    const size = Math.min(w, h) * 0.13;
 
 
-    // Таймер комбо
+    let leftX = w * 0.30;
+    let leftY = h * 0.90;
 
-    if (comboTimer > 0) {
+    let rightX = w * 0.70;
+    let rightY = h * 0.90;
 
-        comboTimer -= delta;
+    let leftRotation = 0;
+    let rightRotation = 0;
 
-        if (comboTimer <= 0) {
 
-            comboTimer = 0;
+    // ==================================================
+    // АНИМАЦИЯ
+    // ==================================================
 
-            comboStep = 0;
+    if (fistAnimation.active) {
 
-            comboText.textContent =
-                "КОМБО: —";
+        const progress =
+            fistAnimation.time /
+            fistAnimation.duration;
+
+
+        // Плавное движение
+
+        const punch =
+            Math.sin(progress * Math.PI);
+
+
+        // --------------------------
+        // ПРАВЫЙ
+        // --------------------------
+
+        if (fistAnimation.type === 1) {
+
+            rightX -= punch * w * 0.22;
+
+            rightY -= punch * h * 0.25;
+
+            rightRotation =
+                -punch * 0.15;
+
         }
+
+
+        // --------------------------
+        // ЛЕВЫЙ
+        // --------------------------
+
+        if (fistAnimation.type === 2) {
+
+            leftX += punch * w * 0.22;
+
+            leftY -= punch * h * 0.25;
+
+            leftRotation =
+                punch * 0.15;
+
+        }
+
+
+        // --------------------------
+        // АПЕРКОТ
+        // --------------------------
+
+        if (fistAnimation.type === 3) {
+
+            leftY -= punch * h * 0.30;
+
+            rightY -= punch * h * 0.30;
+
+            leftX -= punch * w * 0.04;
+
+            rightX += punch * w * 0.04;
+
+        }
+
     }
 
 
-    // Анимация удара
+    // Рисуем левый кулак
 
-    if (attackAnimation > 0) {
-
-        attackAnimation -= delta / 220;
-
-        if (attackAnimation <= 0) {
-
-            attackAnimation = 0;
-
-            currentAttack = "";
-        }
-    }
+    drawFist(
+        leftX,
+        leftY,
+        size,
+        leftRotation
+    );
 
 
-    // Вспышка манекена
+    // Рисуем правый кулак
 
-    if (enemy.hitFlash > 0) {
+    drawFist(
+        rightX,
+        rightY,
+        size,
+        rightRotation
+    );
 
-        enemy.hitFlash -= delta / 150;
-
-        if (enemy.hitFlash < 0) {
-            enemy.hitFlash = 0;
-        }
-    }
 }
 
 
-// =========================
+// ==================================================
 // GAME LOOP
-// =========================
+// ==================================================
 
 let lastTime = performance.now();
 
-function loop(time) {
+function gameLoop(time) {
 
     const delta = time - lastTime;
 
@@ -720,8 +708,9 @@ function loop(time) {
     draw();
 
 
-    requestAnimationFrame(loop);
+    requestAnimationFrame(gameLoop);
+
 }
 
 
-requestAnimationFrame(loop);
+requestAnimationFrame(gameLoop);
