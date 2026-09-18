@@ -5,7 +5,7 @@
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-    <title>Doom Fist Prototype</title>
+    <title>2.5D Shooter</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -13,17 +13,14 @@
 
 <canvas id="game"></canvas>
 
-<div id="hud">
-    <div id="health">HP: 100</div>
-    <div id="enemyHealth">МАНЕКЕН: 100</div>
-    <div id="combo">КОМБО: —</div>
-</div>
-
+<!-- Прицел -->
 <div id="crosshair">+</div>
 
-<div id="message">ПРАВЫЙ → ЛЕВЫЙ → АПЕРКОТ</div>
-
+<!-- Кнопка удара -->
 <button id="attackButton">УДАР</button>
+
+<!-- Надпись комбо -->
+<div id="comboText"></div>
 
 <script src="game.js"></script>
 
