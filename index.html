@@ -4,23 +4,77 @@
     <meta charset="UTF-8">
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
-    <title>2.5D Shooter</title>
+    <title>DOOM Style Prototype</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<canvas id="game"></canvas>
+<div id="game">
 
-<!-- Прицел -->
-<div id="crosshair">+</div>
+    <canvas id="screen"></canvas>
 
-<!-- Кнопка удара -->
-<button id="attackButton">УДАР</button>
+    <!-- HUD -->
+    <div id="hud">
 
-<!-- Надпись комбо -->
-<div id="comboText"></div>
+        <div id="health">
+            HP <span id="hp">100</span>
+        </div>
+
+        <div id="ammo">
+            КУЛАКИ
+        </div>
+
+        <div id="crosshair">+</div>
+
+        <div id="enemyHealth">
+            DUMMY <span id="dummyHp">100</span>
+        </div>
+
+    </div>
+
+    <!-- Кулаки -->
+    <div id="weapon">
+
+        <div class="arm leftArm">
+            <div class="hand"></div>
+        </div>
+
+        <div class="arm rightArm">
+            <div class="hand"></div>
+        </div>
+
+    </div>
+
+    <!-- Мобильное управление -->
+    <div id="mobileControls">
+
+        <div id="movement">
+
+            <button id="forward">▲</button>
+
+            <button id="moveLeft">◀</button>
+
+            <button id="moveBack">▼</button>
+
+            <button id="moveRight">▶</button>
+
+        </div>
+
+        <div id="turn">
+
+            <button id="turnLeft">⟲</button>
+            <button id="turnRight">⟳</button>
+
+        </div>
+
+        <button id="attack">УДАР</button>
+
+    </div>
+
+    <div id="message"></div>
+
+</div>
 
 <script src="game.js"></script>
 
