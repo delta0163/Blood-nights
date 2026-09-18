@@ -12,7 +12,6 @@
 
 html,
 body {
-
     width: 100%;
     height: 100%;
 
@@ -22,7 +21,6 @@ body {
 }
 
 #game {
-
     position: fixed;
 
     left: 0;
@@ -37,7 +35,6 @@ body {
 }
 
 #crosshair {
-
     position: fixed;
 
     left: 50%;
@@ -61,7 +58,6 @@ body {
 }
 
 #weaponName {
-
     position: fixed;
 
     left: 50%;
@@ -83,7 +79,6 @@ body {
 }
 
 #controls {
-
     position: fixed;
 
     inset: 0;
@@ -93,13 +88,7 @@ body {
     pointer-events: none;
 }
 
-
-/* ================================================= */
-/* JOYSTICK */
-/* ================================================= */
-
 #joystick {
-
     position: absolute;
 
     left: 25px;
@@ -118,7 +107,6 @@ body {
 }
 
 #stick {
-
     position: absolute;
 
     left: 50%;
@@ -135,13 +123,7 @@ body {
     background: rgba(220,220,220,.65);
 }
 
-
-/* ================================================= */
-/* КНОПКА ОГОНЬ */
-/* ================================================= */
-
 #shootButton {
-
     position: absolute;
 
     right: 25px;
@@ -167,19 +149,12 @@ body {
 }
 
 #shootButton:active {
-
     transform: scale(.9);
 
     background: rgba(130,130,130,.8);
 }
 
-
-/* ================================================= */
-/* E */
-/* ================================================= */
-
 #interactButton {
-
     position: absolute;
 
     right: 140px;
@@ -202,13 +177,7 @@ body {
     pointer-events: auto;
 }
 
-
-/* ================================================= */
-/* ОРУЖИЕ */
-/* ================================================= */
-
 #weaponButton {
-
     position: absolute;
 
     right: 25px;
@@ -231,13 +200,7 @@ body {
     pointer-events: auto;
 }
 
-
-/* ================================================= */
-/* СООБЩЕНИЯ */
-/* ================================================= */
-
 #message {
-
     position: fixed;
 
     left: 50%;
@@ -264,28 +227,19 @@ body {
     pointer-events: none;
 }
 
-
-/* ================================================= */
-/* МОБИЛЬНЫЕ */
-/* ================================================= */
-
 @media (max-width: 600px) {
 
     #joystick {
-
         width: 115px;
         height: 115px;
     }
 
     #shootButton {
-
         width: 90px;
         height: 90px;
     }
 
     #weaponButton {
-
         bottom: 135px;
     }
-
 }
