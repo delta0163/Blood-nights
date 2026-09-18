@@ -4,52 +4,79 @@
     <meta charset="UTF-8">
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2.5D Shooter Test</title>
+    <title>DOOM Style Prototype</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
 <div id="game">
 
     <canvas id="screen"></canvas>
 
+    <!-- HUD -->
     <div id="hud">
-        <div id="crosshair">+</div>
 
         <div id="health">
-            HP: <span id="hp">100</span>
+            HP <span id="hp">100</span>
         </div>
 
-        <div id="status">МАНЕКЕН: 100 HP</div>
+        <div id="ammo">
+            КУЛАКИ
+        </div>
+
+        <div id="crosshair">+</div>
+
+        <div id="enemyHealth">
+            DUMMY <span id="dummyHp">100</span>
+        </div>
+
     </div>
 
-    <!-- Управление -->
-    <div id="controls">
+    <!-- Кулаки -->
+    <div id="weapon">
 
-        <div id="movePad">
-            <button id="up">▲</button>
-            <button id="left">◀</button>
-            <button id="right">▶</button>
-            <button id="down">▼</button>
+        <div class="arm leftArm">
+            <div class="hand"></div>
         </div>
 
-        <div id="lookButtons">
+        <div class="arm rightArm">
+            <div class="hand"></div>
+        </div>
+
+    </div>
+
+    <!-- Мобильное управление -->
+    <div id="mobileControls">
+
+        <div id="movement">
+
+            <button id="forward">▲</button>
+
+            <button id="moveLeft">◀</button>
+
+            <button id="moveBack">▼</button>
+
+            <button id="moveRight">▶</button>
+
+        </div>
+
+        <div id="turn">
+
             <button id="turnLeft">⟲</button>
             <button id="turnRight">⟳</button>
+
         </div>
 
         <button id="attack">УДАР</button>
 
     </div>
 
-    <!-- Кулаки -->
-    <div id="fists">
-        <div class="fist leftFist"></div>
-        <div class="fist rightFist"></div>
-    </div>
+    <div id="message"></div>
 
 </div>
 
 <script src="game.js"></script>
+
 </body>
 </html>
