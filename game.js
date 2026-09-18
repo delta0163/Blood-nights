@@ -1,47 +1,42 @@
-"use strict";
-
-/*
-====================================================
- DOOM-STYLE 2.5D SHOOTER
- Без WebGL.
- Без библиотек.
- Работает на Canvas.
-====================================================
-*/
-
-const canvas = document.getElementById("screen");
+const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-const hpElement = document.getElementById("hp");
-const dummyHpElement = document.getElementById("dummyHp");
-const messageElement = document.getElementById("message");
-const weaponElement = document.getElementById("weapon");
+const joystick = document.getElementById("joystick");
+const stick = document.getElementById("stick");
 
-let screenWidth = 0;
-let screenHeight = 0;
+const shootButton = document.getElementById("shootButton");
+const interactButton = document.getElementById("interactButton");
+const weaponButton = document.getElementById("weaponButton");
 
-function resizeCanvas() {
+const weaponName = document.getElementById("weaponName");
+const message = document.getElementById("message");
 
-    screenWidth = window.innerWidth;
-    screenHeight = window.innerHeight;
 
-    canvas.width = Math.max(320, Math.floor(screenWidth * 0.75));
-    canvas.height = Math.max(180, Math.floor(screenHeight * 0.75));
+// ======================================================
+// CANVAS
+// ======================================================
+
+function resize() {
+
+    canvas.width = Math.floor(window.innerWidth);
+    canvas.height = Math.floor(window.innerHeight);
 
 }
 
-window.addEventListener("resize", resizeCanvas);
+window.addEventListener("resize", resize);
+resize();
 
-resizeCanvas();
 
-/*
-====================================================
- КАРТА
-
- # = стена
- . = пол
-====================================================
-*/
+// ======================================================
+// КАРТА
+// ======================================================
+//
+// # = стена
+// . = свободное место
+// L = рычаг
+//
+// Игрок начинает в центре комнаты.
+//
 
 const map = [
 
@@ -55,127 +50,795 @@ const map = [
     "#..........#",
     "#..........#",
     "#..........#",
+    "#..........#",
     "############"
 
 ];
 
-const TILE = 64;
+const MAP_W = map[0].length;
+const MAP_H = map.length;
 
-/*
-====================================================
- ИГРОК
-====================================================
-*/
+
+// ======================================================
+// ИГРОК
+// ======================================================
 
 const player = {
 
-    x: TILE * 3.5,
-
-    y: TILE * 5.5,
+    x: 6,
+    y: 8,
 
     angle: 0,
 
     speed: 2.7,
 
-    hp: 100
+    radius: 0.18
 
 };
 
-/*
-====================================================
- МАНЕКЕН
-====================================================
-*/
 
-const dummy = {
-
-    x: TILE * 8,
-
-    y: TILE * 5,
-
-    hp: 100,
-
-    maxHp: 100,
-
-    hitTimer: 0,
-
-    attackCooldown: 0
-
-};
-
-/*
-====================================================
- УПРАВЛЕНИЕ
-====================================================
-*/
-
-const input = {
-
-    forward: false,
-
-    backward: false,
-
-    left: false,
-
-    right: false,
-
-    turnLeft: false,
-
-    turnRight: false
-
-};
-
-/*
-====================================================
- RAYCAST
-====================================================
-*/
+// ======================================================
+// НАСТРОЙКИ RAYCASTING
+// ======================================================
 
 const FOV = Math.PI / 3;
 
-const RAYS = 320;
+const MAX_DEPTH = 20;
 
-const MAX_DISTANCE = 900;
+const RAYS = 240;
 
-function wallAt(x, y) {
 
-    const mapX = Math.floor(x / TILE);
-    const mapY = Math.floor(y / TILE);
+// ======================================================
+// МАНЕКЕНЫ
+// ======================================================
 
-    if (
-        mapY < 0 ||
-        mapY >= map.length ||
-        mapX < 0 ||
-        mapX >= map[0].length
-    ) {
-        return true;
+let enemies = [
+
+    {
+        x: 6,
+        y: 3,
+
+        hp: 100,
+
+        alive: true,
+
+        hit: 0
     }
 
-    return map[mapY][mapX] === "#";
+];
+
+
+// ======================================================
+// РЫЧАГ
+// ======================================================
+
+const lever = {
+
+    x: 9.2,
+    y: 2.0,
+
+    used: false
+
+};
+
+
+// ======================================================
+// ОРУЖИЕ
+// ======================================================
+
+let weapon = "fists";
+
+let shooting = false;
+
+let weaponAnimation = 0;
+
+
+// ======================================================
+// ПЕРЕКЛЮЧЕНИЕ ОРУЖИЯ
+// ======================================================
+
+weaponButton.addEventListener("pointerdown", function(e) {
+
+    e.preventDefault();
+
+    if (weapon === "fists") {
+
+        weapon = "shotgun";
+
+        weaponName.textContent = "ДРОБОВИК";
+
+    }
+
+    else {
+
+        weapon = "fists";
+
+        weaponName.textContent = "КУЛАКИ";
+
+    }
+
+});
+
+
+// ======================================================
+// СТРЕЛЬБА
+// ======================================================
+
+shootButton.addEventListener("pointerdown", function(e) {
+
+    e.preventDefault();
+
+    shoot();
+
+});
+
+
+// ПК
+
+window.addEventListener("keydown", function(e) {
+
+    if (e.code === "Space") {
+
+        shoot();
+
+    }
+
+    if (e.code === "KeyE") {
+
+        interact();
+
+    }
+
+    if (e.code === "KeyQ") {
+
+        weaponButton.click();
+
+    }
+
+});
+
+
+// ======================================================
+// ВЫСТРЕЛ
+// ======================================================
+
+function shoot() {
+
+    if (weaponAnimation > 0) {
+        return;
+    }
+
+    weaponAnimation = weapon === "shotgun" ? 300 : 180;
+
+
+    if (weapon === "fists") {
+
+        punch();
+
+    }
+
+    else {
+
+        shotgun();
+
+    }
+
 }
 
-/*
-====================================================
- ПРОВЕРКА ДВИЖЕНИЯ
-====================================================
-*/
 
-function movePlayer(dx, dy) {
+// ======================================================
+// КУЛАК
+// ======================================================
 
-    const radius = 12;
+function punch() {
+
+    const target = getTargetEnemy(2.0);
+
+    if (target) {
+
+        target.hp -= 20;
+
+        target.hit = 1;
+
+        if (target.hp <= 0) {
+
+            target.alive = false;
+
+            showMessage("МАНЕКЕН ПОВАЛЕН");
+
+        }
+
+    }
+
+}
+
+
+// ======================================================
+// ДРОБОВИК
+// ======================================================
+
+function shotgun() {
+
+    const range = 8;
+
+    let hitSomething = false;
+
+
+    // Несколько небольших направлений,
+    // имитирующих разброс дроби.
+
+    const spread = [
+
+        -0.08,
+        -0.04,
+        0,
+        0.04,
+        0.08
+
+    ];
+
+
+    for (const offset of spread) {
+
+        const target = getTargetEnemy(
+            range,
+            offset
+        );
+
+        if (target) {
+
+            target.hp -= 20;
+
+            target.hit = 1;
+
+            hitSomething = true;
+
+        }
+
+    }
+
+
+    if (hitSomething) {
+
+        showMessage("ПОПАДАНИЕ");
+
+    }
+
+}
+
+
+// ======================================================
+// ПОИСК МАНЕКЕНА
+// ======================================================
+
+function getTargetEnemy(maxDistance, angleOffset = 0) {
+
+    let best = null;
+
+    let bestDistance = Infinity;
+
+
+    for (const enemy of enemies) {
+
+        if (!enemy.alive) {
+            continue;
+        }
+
+
+        const dx = enemy.x - player.x;
+        const dy = enemy.y - player.y;
+
+        const distance = Math.sqrt(
+            dx * dx +
+            dy * dy
+        );
+
+
+        if (distance > maxDistance) {
+            continue;
+        }
+
+
+        let angle = Math.atan2(
+            dy,
+            dx
+        );
+
+
+        let difference =
+            normalizeAngle(
+                angle -
+                player.angle -
+                angleOffset
+            );
+
+
+        // Примерный размер цели
+
+        if (Math.abs(difference) < 0.13) {
+
+            if (distance < bestDistance) {
+
+                best = enemy;
+
+                bestDistance = distance;
+
+            }
+
+        }
+
+    }
+
+
+    return best;
+
+}
+
+
+// ======================================================
+// РЫЧАГ
+// ======================================================
+
+interactButton.addEventListener("pointerdown", function(e) {
+
+    e.preventDefault();
+
+    interact();
+
+});
+
+
+function interact() {
+
+    const dx = lever.x - player.x;
+    const dy = lever.y - player.y;
+
+    const distance = Math.sqrt(
+        dx * dx +
+        dy * dy
+    );
+
+
+    if (distance > 1.5) {
+
+        showMessage("ПОДОЙДИ БЛИЖЕ К РЫЧАГУ");
+
+        return;
+
+    }
+
+
+    // Спавним нового манекена
+
+    spawnEnemy();
+
+}
+
+
+// ======================================================
+// СПАВН МАНЕКЕНА
+// ======================================================
+
+function spawnEnemy() {
+
+    // Несколько заранее подготовленных точек.
+
+    const spawnPoints = [
+
+        { x: 3, y: 3 },
+        { x: 8, y: 3 },
+        { x: 3, y: 8 },
+        { x: 8, y: 8 },
+        { x: 6, y: 5 }
+
+    ];
+
+
+    // Ищем свободную точку
+
+    for (const point of spawnPoints) {
+
+        let occupied = false;
+
+
+        for (const enemy of enemies) {
+
+            if (!enemy.alive) {
+                continue;
+            }
+
+
+            const dx =
+                enemy.x -
+                point.x;
+
+            const dy =
+                enemy.y -
+                point.y;
+
+
+            if (
+                Math.sqrt(
+                    dx * dx +
+                    dy * dy
+                ) < 0.8
+            ) {
+
+                occupied = true;
+
+                break;
+
+            }
+
+        }
+
+
+        if (!occupied) {
+
+            enemies.push({
+
+                x: point.x,
+                y: point.y,
+
+                hp: 100,
+
+                alive: true,
+
+                hit: 0
+
+            });
+
+
+            showMessage("НОВЫЙ МАНЕКЕН");
+
+            return;
+
+        }
+
+    }
+
+
+    showMessage("НЕТ СВОБОДНОГО МЕСТА");
+
+}
+
+
+// ======================================================
+// JOYSTICK
+// ======================================================
+
+let joystickActive = false;
+
+let joyX = 0;
+let joyY = 0;
+
+
+joystick.addEventListener("pointerdown", function(e) {
+
+    joystickActive = true;
+
+    joystick.setPointerCapture(e.pointerId);
+
+    updateJoystick(e);
+
+});
+
+
+joystick.addEventListener("pointermove", function(e) {
+
+    if (!joystickActive) {
+        return;
+    }
+
+    updateJoystick(e);
+
+});
+
+
+joystick.addEventListener("pointerup", function() {
+
+    joystickActive = false;
+
+    joyX = 0;
+    joyY = 0;
+
+    stick.style.left = "50%";
+    stick.style.top = "50%";
+
+});
+
+
+joystick.addEventListener("pointercancel", function() {
+
+    joystickActive = false;
+
+    joyX = 0;
+    joyY = 0;
+
+});
+
+
+function updateJoystick(e) {
+
+    const rect =
+        joystick.getBoundingClientRect();
+
+
+    const centerX =
+        rect.left +
+        rect.width / 2;
+
+    const centerY =
+        rect.top +
+        rect.height / 2;
+
+
+    let x =
+        e.clientX -
+        centerX;
+
+    let y =
+        e.clientY -
+        centerY;
+
+
+    const max =
+        rect.width / 2 -
+        28;
+
+
+    const length =
+        Math.sqrt(
+            x * x +
+            y * y
+        );
+
+
+    if (length > max) {
+
+        x =
+            x /
+            length *
+            max;
+
+        y =
+            y /
+            length *
+            max;
+
+    }
+
+
+    joyX = x / max;
+    joyY = y / max;
+
+
+    stick.style.left =
+        `calc(50% + ${x}px)`;
+
+    stick.style.top =
+        `calc(50% + ${y}px)`;
+
+}
+
+
+// ======================================================
+// ПОВОРОТ КАМЕРЫ
+// ======================================================
+
+let lookActive = false;
+
+let lastLookX = 0;
+
+
+// Правая часть экрана
+
+canvas.addEventListener("pointerdown", function(e) {
+
+    if (e.clientX < window.innerWidth * 0.45) {
+        return;
+    }
+
+    lookActive = true;
+
+    lastLookX = e.clientX;
+
+    canvas.setPointerCapture(e.pointerId);
+
+});
+
+
+canvas.addEventListener("pointermove", function(e) {
+
+    if (!lookActive) {
+        return;
+    }
+
+
+    const dx =
+        e.clientX -
+        lastLookX;
+
+
+    player.angle += dx * 0.006;
+
+    lastLookX = e.clientX;
+
+});
+
+
+canvas.addEventListener("pointerup", function() {
+
+    lookActive = false;
+
+});
+
+
+canvas.addEventListener("pointercancel", function() {
+
+    lookActive = false;
+
+});
+
+
+// ======================================================
+// ПРОВЕРКА СТЕН
+// ======================================================
+
+function isWall(x, y) {
+
+    const mapX = Math.floor(x);
+    const mapY = Math.floor(y);
+
 
     if (
-        !wallAt(player.x + dx + radius, player.y) &&
-        !wallAt(player.x + dx - radius, player.y)
+        mapX < 0 ||
+        mapY < 0 ||
+        mapX >= MAP_W ||
+        mapY >= MAP_H
+    ) {
+
+        return true;
+
+    }
+
+
+    return map[mapY][mapX] === "#";
+
+}
+
+
+// ======================================================
+// ДВИЖЕНИЕ
+// ======================================================
+
+function movePlayer(delta) {
+
+    const forward =
+        -joyY;
+
+    const strafe =
+        joyX;
+
+
+    // Клавиатура
+
+    let keyboardForward = 0;
+    let keyboardStrafe = 0;
+
+
+    if (
+        keys["KeyW"] ||
+        keys["ArrowUp"]
+    ) {
+
+        keyboardForward += 1;
+
+    }
+
+
+    if (
+        keys["KeyS"] ||
+        keys["ArrowDown"]
+    ) {
+
+        keyboardForward -= 1;
+
+    }
+
+
+    if (
+        keys["KeyD"] ||
+        keys["ArrowRight"]
+    ) {
+
+        keyboardStrafe += 1;
+
+    }
+
+
+    if (
+        keys["KeyA"] ||
+        keys["ArrowLeft"]
+    ) {
+
+        keyboardStrafe -= 1;
+
+    }
+
+
+    const f =
+        forward +
+        keyboardForward;
+
+    const s =
+        strafe +
+        keyboardStrafe;
+
+
+    const length =
+        Math.sqrt(
+            f * f +
+            s * s
+        );
+
+
+    if (length <= 0) {
+        return;
+    }
+
+
+    const nf = f / Math.max(length, 1);
+    const ns = s / Math.max(length, 1);
+
+
+    const moveSpeed =
+        player.speed *
+        delta /
+        1000;
+
+
+    const dx =
+        Math.cos(player.angle) *
+        nf *
+        moveSpeed
+        -
+        Math.sin(player.angle) *
+        ns *
+        moveSpeed;
+
+
+    const dy =
+        Math.sin(player.angle) *
+        nf *
+        moveSpeed
+        +
+        Math.cos(player.angle) *
+        ns *
+        moveSpeed;
+
+
+    // Коллизия X
+
+    if (
+        !isWall(
+            player.x + dx + Math.sign(dx) * player.radius,
+            player.y
+        )
     ) {
 
         player.x += dx;
 
     }
 
+
+    // Коллизия Y
+
     if (
-        !wallAt(player.x, player.y + dy + radius) &&
-        !wallAt(player.x, player.y + dy - radius)
+        !isWall(
+            player.x,
+            player.y + dy + Math.sign(dy) * player.radius
+        )
     ) {
 
         player.y += dy;
@@ -184,34 +847,58 @@ function movePlayer(dx, dy) {
 
 }
 
-/*
-====================================================
- ЛУЧ
-====================================================
-*/
+
+// ======================================================
+// КЛАВИАТУРА
+// ======================================================
+
+const keys = {};
+
+window.addEventListener("keydown", function(e) {
+
+    keys[e.code] = true;
+
+});
+
+window.addEventListener("keyup", function(e) {
+
+    keys[e.code] = false;
+
+});
+
+
+// ======================================================
+// RAYCAST
+// ======================================================
 
 function castRay(angle) {
 
-    const step = 3;
-
-    const cos = Math.cos(angle);
     const sin = Math.sin(angle);
+    const cos = Math.cos(angle);
 
-    for (
-        let distance = 0;
-        distance < MAX_DISTANCE;
-        distance += step
-    ) {
+
+    let distance = 0;
+
+    const step = 0.025;
+
+
+    while (distance < MAX_DEPTH) {
+
+        distance += step;
+
 
         const x =
             player.x +
-            cos * distance;
+            cos *
+            distance;
 
         const y =
             player.y +
-            sin * distance;
+            sin *
+            distance;
 
-        if (wallAt(x, y)) {
+
+        if (isWall(x, y)) {
 
             return distance;
 
@@ -219,112 +906,79 @@ function castRay(angle) {
 
     }
 
-    return MAX_DISTANCE;
+
+    return MAX_DEPTH;
 
 }
 
-/*
-====================================================
- ФОН
-====================================================
-*/
 
-function drawSkyAndFloor() {
+// ======================================================
+// РИСОВАНИЕ МИРА
+// ======================================================
 
-    /*
-        Небо
-    */
+function drawWorld() {
 
-    const skyGradient =
-        ctx.createLinearGradient(
-            0,
-            0,
-            0,
-            canvas.height / 2
-        );
+    const w = canvas.width;
+    const h = canvas.height;
 
-    skyGradient.addColorStop(
-        0,
-        "#151515"
-    );
 
-    skyGradient.addColorStop(
-        1,
-        "#4b4b4b"
-    );
+    // Небо
 
-    ctx.fillStyle = skyGradient;
+    ctx.fillStyle = "#101010";
 
     ctx.fillRect(
         0,
         0,
-        canvas.width,
-        canvas.height / 2
+        w,
+        h / 2
     );
 
-    /*
-        Пол
-    */
 
-    const floorGradient =
-        ctx.createLinearGradient(
-            0,
-            canvas.height / 2,
-            0,
-            canvas.height
-        );
+    // Пол
 
-    floorGradient.addColorStop(
-        0,
-        "#303030"
-    );
-
-    floorGradient.addColorStop(
-        1,
-        "#080808"
-    );
-
-    ctx.fillStyle = floorGradient;
+    ctx.fillStyle = "#252525";
 
     ctx.fillRect(
         0,
-        canvas.height / 2,
-        canvas.width,
-        canvas.height / 2
+        h / 2,
+        w,
+        h / 2
     );
 
-}
 
-/*
-====================================================
- СТЕНЫ
-====================================================
-*/
+    const rayCount =
+        Math.min(
+            RAYS,
+            Math.floor(w / 2)
+        );
 
-const depthBuffer = new Array(RAYS);
-
-function renderWalls() {
 
     const columnWidth =
-        canvas.width / RAYS;
+        w /
+        rayCount;
 
-    for (
-        let ray = 0;
-        ray < RAYS;
-        ray++
-    ) {
+
+    // Стены
+
+    for (let i = 0; i < rayCount; i++) {
+
+        const cameraX =
+            i /
+            rayCount -
+            0.5;
+
 
         const rayAngle =
-            player.angle -
-            FOV / 2 +
-            (ray / RAYS) * FOV;
+            player.angle +
+            cameraX *
+            FOV;
+
 
         let distance =
             castRay(rayAngle);
 
-        /*
-            Убираем fish-eye.
-        */
+
+        // Убираем fish-eye
 
         distance *=
             Math.cos(
@@ -332,52 +986,35 @@ function renderWalls() {
                 player.angle
             );
 
-        distance =
-            Math.max(
-                distance,
-                0.1
-            );
-
-        depthBuffer[ray] = distance;
-
-        /*
-            Высота стены
-        */
 
         const wallHeight =
-            (TILE * canvas.height) /
-            distance;
-
-        const top =
-            canvas.height / 2 -
-            wallHeight / 2;
-
-        /*
-            Затемнение по расстоянию
-        */
-
-        let brightness =
-            190 -
-            distance * 0.25;
-
-        brightness =
+            h /
             Math.max(
-                35,
-                Math.min(
-                    190,
-                    brightness
-                )
+                distance,
+                0.001
             );
 
-        const color =
-            Math.floor(brightness);
+
+        const wallTop =
+            h / 2 -
+            wallHeight / 2;
+
+
+        const brightness =
+            Math.max(
+                25,
+                180 -
+                distance * 15
+            );
+
 
         ctx.fillStyle =
-            `rgb(${color},${color},${color})`;
+            `rgb(${brightness},${brightness},${brightness})`;
+
 
         ctx.fillRect(
-            ray * columnWidth,
-            top,
+            i * columnWidth,
+            wallTop,
             columnWidth + 1,
             wallHeight
         );
@@ -386,810 +1023,826 @@ function renderWalls() {
 
 }
 
-/*
-====================================================
- УГОЛ ДО ОБЪЕКТА
-====================================================
-*/
 
-function relativeAngle(targetX, targetY) {
+// ======================================================
+// SPRITES
+// ======================================================
+
+function drawSprites() {
+
+    const sprites = [];
+
+
+    // Манекены
+
+    for (const enemy of enemies) {
+
+        if (!enemy.alive) {
+            continue;
+        }
+
+
+        sprites.push({
+
+            type: "enemy",
+
+            x: enemy.x,
+            y: enemy.y,
+
+            object: enemy
+
+        });
+
+    }
+
+
+    // Рычаг
+
+    sprites.push({
+
+        type: "lever",
+
+        x: lever.x,
+        y: lever.y,
+
+        object: lever
+
+    });
+
+
+    // Дальние рисуем первыми
+
+    sprites.sort(function(a, b) {
+
+        const da =
+            distanceToPlayer(a);
+
+        const db =
+            distanceToPlayer(b);
+
+        return db - da;
+
+    });
+
+
+    for (const sprite of sprites) {
+
+        drawSprite(sprite);
+
+    }
+
+}
+
+
+// ======================================================
+// ДИСТАНЦИЯ
+// ======================================================
+
+function distanceToPlayer(sprite) {
+
+    const dx =
+        sprite.x -
+        player.x;
+
+    const dy =
+        sprite.y -
+        player.y;
+
+
+    return Math.sqrt(
+        dx * dx +
+        dy * dy
+    );
+
+}
+
+
+// ======================================================
+// SPRITE
+// ======================================================
+
+function drawSprite(sprite) {
+
+    const w = canvas.width;
+    const h = canvas.height;
+
+
+    const dx =
+        sprite.x -
+        player.x;
+
+    const dy =
+        sprite.y -
+        player.y;
+
+
+    const distance =
+        Math.sqrt(
+            dx * dx +
+            dy * dy
+        );
+
 
     let angle =
         Math.atan2(
-            targetY - player.y,
-            targetX - player.x
-        ) -
-        player.angle;
+            dy,
+            dx
+        );
+
+
+    const relativeAngle =
+        normalizeAngle(
+            angle -
+            player.angle
+        );
+
+
+    // За пределами обзора
+
+    if (
+        Math.abs(relativeAngle) >
+        FOV * 0.65
+    ) {
+
+        return;
+
+    }
+
+
+    // Проверяем стену перед объектом
+
+    const wallDistance =
+        castRay(
+            player.angle +
+            relativeAngle
+        );
+
+
+    if (
+        distance >
+        wallDistance + 0.1
+    ) {
+
+        return;
+
+    }
+
+
+    const screenX =
+        w / 2 +
+        Math.tan(relativeAngle) *
+        (w / 2) /
+        Math.tan(FOV / 2);
+
+
+    const size =
+        h /
+        Math.max(
+            distance,
+            0.1
+        );
+
+
+    if (sprite.type === "enemy") {
+
+        drawEnemySprite(
+            screenX,
+            h / 2,
+            size,
+            sprite.object
+        );
+
+    }
+
+
+    if (sprite.type === "lever") {
+
+        drawLeverSprite(
+            screenX,
+            h / 2,
+            size
+        );
+
+    }
+
+}
+
+
+// ======================================================
+// МАНЕКЕН
+// ======================================================
+
+function drawEnemySprite(
+    x,
+    centerY,
+    size,
+    enemy
+) {
+
+    const scale =
+        Math.min(
+            size * 0.003,
+            1.5
+        );
+
+
+    const bodyHeight =
+        170 * scale;
+
+    const headSize =
+        32 * scale;
+
+
+    let color =
+        enemy.hit > 0
+            ? "#ffffff"
+            : "#888888";
+
+
+    // Тело
+
+    ctx.fillStyle = color;
+
+    ctx.fillRect(
+        x - 35 * scale,
+        centerY,
+        70 * scale,
+        bodyHeight
+    );
+
+
+    // Голова
+
+    ctx.beginPath();
+
+    ctx.arc(
+        x,
+        centerY - 35 * scale,
+        headSize,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+
+    // Руки
+
+    ctx.fillRect(
+        x - 65 * scale,
+        centerY + 5 * scale,
+        22 * scale,
+        80 * scale
+    );
+
+    ctx.fillRect(
+        x + 43 * scale,
+        centerY + 5 * scale,
+        22 * scale,
+        80 * scale
+    );
+
+
+    // Ноги
+
+    ctx.fillRect(
+        x - 28 * scale,
+        centerY + bodyHeight,
+        20 * scale,
+        80 * scale
+    );
+
+    ctx.fillRect(
+        x + 8 * scale,
+        centerY + bodyHeight,
+        20 * scale,
+        80 * scale
+    );
+
+
+    // HP
+
+    const barWidth =
+        80 * scale;
+
+
+    ctx.fillStyle = "#111";
+
+    ctx.fillRect(
+        x - barWidth / 2,
+        centerY - 80 * scale,
+        barWidth,
+        8
+    );
+
+
+    ctx.fillStyle = "#d00000";
+
+    ctx.fillRect(
+        x - barWidth / 2,
+        centerY - 80 * scale,
+        barWidth *
+        Math.max(
+            enemy.hp / 100,
+            0
+        ),
+        8
+    );
+
+}
+
+
+// ======================================================
+// РЫЧАГ
+// ======================================================
+
+function drawLeverSprite(
+    x,
+    centerY,
+    size
+) {
+
+    const scale =
+        Math.min(
+            size * 0.004,
+            1.5
+        );
+
+
+    const y =
+        centerY +
+        50 * scale;
+
+
+    // Основание
+
+    ctx.fillStyle = "#333";
+
+    ctx.fillRect(
+        x - 18 * scale,
+        y,
+        36 * scale,
+        65 * scale
+    );
+
+
+    // Рычаг
+
+    ctx.strokeStyle = "#777";
+
+    ctx.lineWidth =
+        Math.max(
+            5 * scale,
+            2
+        );
+
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        x,
+        y + 10 * scale
+    );
+
+
+    ctx.lineTo(
+        x + 25 * scale,
+        y - 30 * scale
+    );
+
+    ctx.stroke();
+
+
+    // Рукоятка
+
+    ctx.fillStyle = "#c33";
+
+    ctx.beginPath();
+
+    ctx.arc(
+        x + 25 * scale,
+        y - 30 * scale,
+        9 * scale,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+}
+
+
+// ======================================================
+// ОРУЖИЕ НА ЭКРАНЕ
+// ======================================================
+
+function drawWeapon() {
+
+    const w = canvas.width;
+    const h = canvas.height;
+
+
+    let recoil = 0;
+
+
+    if (weaponAnimation > 0) {
+
+        recoil =
+            Math.sin(
+                weaponAnimation /
+                300 *
+                Math.PI
+            );
+
+    }
+
+
+    if (weapon === "fists") {
+
+        drawFists(
+            w,
+            h,
+            recoil
+        );
+
+    }
+
+    else {
+
+        drawShotgun(
+            w,
+            h,
+            recoil
+        );
+
+    }
+
+}
+
+
+// ======================================================
+// КУЛАКИ
+// ======================================================
+
+function drawFists(
+    w,
+    h,
+    recoil
+) {
+
+    const size =
+        Math.min(w, h) *
+        0.12;
+
+
+    drawFist(
+        w * 0.30,
+        h * 0.91 - recoil * 35,
+        size,
+        0.05
+    );
+
+
+    drawFist(
+        w * 0.70,
+        h * 0.91 - recoil * 35,
+        size,
+        -0.05
+    );
+
+}
+
+
+function drawFist(
+    x,
+    y,
+    size,
+    rotation
+) {
+
+    ctx.save();
+
+    ctx.translate(x, y);
+
+    ctx.rotate(rotation);
+
+
+    // Рука
+
+    ctx.fillStyle = "#b97858";
+
+    ctx.fillRect(
+        -size * .23,
+        0,
+        size * .46,
+        size * .9
+    );
+
+
+    // Кулак
+
+    ctx.fillStyle = "#d59a73";
+
+    ctx.beginPath();
+
+    ctx.roundRect(
+        -size * .48,
+        -size * .40,
+        size * .96,
+        size * .62,
+        size * .14
+    );
+
+    ctx.fill();
+
+
+    // Пальцы
+
+    ctx.fillStyle = "#b87858";
+
+    for (let i = 0; i < 4; i++) {
+
+        ctx.fillRect(
+            -size * .37 +
+            i * size * .19,
+
+            -size * .20,
+
+            size * .13,
+            size * .24
+        );
+
+    }
+
+
+    ctx.restore();
+
+}
+
+
+// ======================================================
+// ДРОБОВИК
+// ======================================================
+
+function drawShotgun(
+    w,
+    h,
+    recoil
+) {
+
+    const cx = w / 2;
+
+    const bottom = h + 30;
+
+
+    ctx.save();
+
+
+    // Отдача
+
+    ctx.translate(
+        0,
+        recoil * 45
+    );
+
+
+    // Ствол
+
+    ctx.fillStyle = "#181818";
+
+    ctx.fillRect(
+        cx - 45,
+        h * .67,
+        90,
+        h * .34
+    );
+
+
+    // Верх ствола
+
+    ctx.fillStyle = "#292929";
+
+    ctx.fillRect(
+        cx - 28,
+        h * .58,
+        56,
+        h * .38
+    );
+
+
+    // Конец ствола
+
+    ctx.fillStyle = "#080808";
+
+    ctx.beginPath();
+
+    ctx.arc(
+        cx,
+        h * .58,
+        28,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+
+    // Два отверстия
+
+    ctx.fillStyle = "#000";
+
+    ctx.beginPath();
+
+    ctx.arc(
+        cx - 11,
+        h * .58,
+        8,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+
+    ctx.beginPath();
+
+    ctx.arc(
+        cx + 11,
+        h * .58,
+        8,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+
+    // Деревянная часть
+
+    ctx.fillStyle = "#75482d";
+
+    ctx.fillRect(
+        cx - 70,
+        h * .82,
+        140,
+        35
+    );
+
+
+    // Руки
+
+    ctx.fillStyle = "#c88c68";
+
+    ctx.fillRect(
+        cx - 100,
+        h * .80,
+        35,
+        120
+    );
+
+    ctx.fillRect(
+        cx + 65,
+        h * .80,
+        35,
+        120
+    );
+
+
+    ctx.restore();
+
+}
+
+
+// ======================================================
+// УПРАВЛЕНИЕ
+// ======================================================
+
+function normalizeAngle(angle) {
 
     while (angle > Math.PI) {
+
         angle -= Math.PI * 2;
+
     }
 
     while (angle < -Math.PI) {
+
         angle += Math.PI * 2;
+
     }
 
     return angle;
 
 }
 
-/*
-====================================================
- МАНЕКЕН
-====================================================
-*/
 
-function renderDummy() {
+// ======================================================
+// СООБЩЕНИЕ
+// ======================================================
 
-    if (dummy.hp <= 0) {
-        return;
-    }
+let messageTimer = 0;
 
-    const dx =
-        dummy.x -
-        player.x;
 
-    const dy =
-        dummy.y -
-        player.y;
+function showMessage(text) {
 
-    const distance =
-        Math.sqrt(
-            dx * dx +
-            dy * dy
-        );
+    message.textContent = text;
 
-    let angle =
-        relativeAngle(
-            dummy.x,
-            dummy.y
-        );
+    message.style.opacity = "1";
 
-    /*
-        За пределами поля зрения
-    */
-
-    if (
-        Math.abs(angle) >
-        FOV / 2 + 0.25
-    ) {
-
-        return;
-
-    }
-
-    const correctedDistance =
-        distance *
-        Math.cos(angle);
-
-    if (
-        correctedDistance <= 1
-    ) {
-
-        return;
-
-    }
-
-    /*
-        Позиция на экране
-    */
-
-    const centerX =
-        canvas.width / 2;
-
-    const screenX =
-        centerX +
-        Math.tan(angle) *
-        (canvas.width / 2) /
-        Math.tan(FOV / 2);
-
-    /*
-        Размер спрайта
-    */
-
-    const spriteHeight =
-        (TILE * canvas.height * 1.7) /
-        correctedDistance;
-
-    const spriteWidth =
-        spriteHeight * 0.48;
-
-    const bottom =
-        canvas.height / 2 +
-        spriteHeight / 2;
-
-    const x =
-        screenX -
-        spriteWidth / 2;
-
-    const y =
-        bottom -
-        spriteHeight;
-
-    ctx.save();
-
-    /*
-        Эффект попадания
-    */
-
-    if (dummy.hitTimer > 0) {
-
-        ctx.translate(
-            Math.random() * 6 - 3,
-            Math.random() * 6 - 3
-        );
-
-    }
-
-    /*
-        Тень
-    */
-
-    ctx.fillStyle =
-        "rgba(0,0,0,.5)";
-
-    ctx.beginPath();
-
-    ctx.ellipse(
-        screenX,
-        bottom,
-        spriteWidth * .55,
-        spriteHeight * .07,
-        0,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.fill();
-
-    /*
-        Ноги
-    */
-
-    ctx.fillStyle = "#444";
-
-    ctx.fillRect(
-        x + spriteWidth * .25,
-        y + spriteHeight * .68,
-        spriteWidth * .2,
-        spriteHeight * .32
-    );
-
-    ctx.fillRect(
-        x + spriteWidth * .55,
-        y + spriteHeight * .68,
-        spriteWidth * .2,
-        spriteHeight * .32
-    );
-
-    /*
-        Тело
-    */
-
-    ctx.fillStyle = "#777";
-
-    ctx.fillRect(
-        x + spriteWidth * .18,
-        y + spriteHeight * .32,
-        spriteWidth * .64,
-        spriteHeight * .4
-    );
-
-    /*
-        Левая рука
-    */
-
-    ctx.fillStyle = "#666";
-
-    ctx.fillRect(
-        x + spriteWidth * .02,
-        y + spriteHeight * .34,
-        spriteWidth * .2,
-        spriteHeight * .38
-    );
-
-    /*
-        Правая рука
-    */
-
-    ctx.fillRect(
-        x + spriteWidth * .78,
-        y + spriteHeight * .34,
-        spriteWidth * .2,
-        spriteHeight * .38
-    );
-
-    /*
-        Голова
-    */
-
-    ctx.fillStyle = "#aaa";
-
-    ctx.beginPath();
-
-    ctx.arc(
-        screenX,
-        y + spriteHeight * .19,
-        spriteWidth * .23,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.fill();
-
-    /*
-        Лицо
-    */
-
-    ctx.fillStyle = "#111";
-
-    ctx.fillRect(
-        screenX -
-        spriteWidth * .11,
-
-        y +
-        spriteHeight * .17,
-
-        spriteWidth * .06,
-
-        spriteHeight * .035
-    );
-
-    ctx.fillRect(
-        screenX +
-        spriteWidth * .05,
-
-        y +
-        spriteHeight * .17,
-
-        spriteWidth * .06,
-
-        spriteHeight * .035
-    );
-
-    ctx.restore();
-
-    /*
-        Полоска здоровья
-    */
-
-    const barWidth =
-        spriteWidth * 1.2;
-
-    const barHeight = 7;
-
-    ctx.fillStyle = "#111";
-
-    ctx.fillRect(
-        screenX -
-        barWidth / 2,
-
-        y - 13,
-
-        barWidth,
-
-        barHeight
-    );
-
-    ctx.fillStyle = "#d22";
-
-    ctx.fillRect(
-        screenX -
-        barWidth / 2,
-
-        y - 13,
-
-        barWidth *
-        (dummy.hp / dummy.maxHp),
-
-        barHeight
-    );
+    messageTimer = 900;
 
 }
 
-/*
-====================================================
- УДАР
-====================================================
-*/
 
-let punchSide = false;
+// ======================================================
+// UPDATE
+// ======================================================
 
-function punch() {
+function update(delta) {
 
-    if (dummy.hp <= 0) {
-        return;
+    movePlayer(delta);
+
+
+    // Анимация оружия
+
+    if (weaponAnimation > 0) {
+
+        weaponAnimation -= delta;
+
     }
 
-    /*
-        Анимация
-    */
 
-    punchSide = !punchSide;
+    // Вспышка попадания
 
-    weaponElement.classList.remove(
-        "punchLeft",
-        "punchRight"
-    );
+    for (const enemy of enemies) {
 
-    void weaponElement.offsetWidth;
+        if (enemy.hit > 0) {
 
-    weaponElement.classList.add(
-        punchSide ?
-        "punchLeft" :
-        "punchRight"
-    );
-
-    /*
-        Проверка попадания
-    */
-
-    const dx =
-        dummy.x -
-        player.x;
-
-    const dy =
-        dummy.y -
-        player.y;
-
-    const distance =
-        Math.sqrt(
-            dx * dx +
-            dy * dy
-        );
-
-    const angle =
-        Math.abs(
-            relativeAngle(
-                dummy.x,
-                dummy.y
-            )
-        );
-
-    /*
-        Радиус удара
-    */
-
-    if (
-        distance < 130 &&
-        angle < 0.35
-    ) {
-
-        dummy.hp -= 25;
-
-        dummy.hitTimer = 10;
-
-        if (dummy.hp < 0) {
-            dummy.hp = 0;
-        }
-
-        dummyHpElement.textContent =
-            dummy.hp;
-
-        if (dummy.hp <= 0) {
-
-            messageElement.textContent =
-                "МАНЕКЕН ПОВАЛЕН";
+            enemy.hit -=
+                delta / 100;
 
         }
+
+    }
+
+
+    // Сообщение
+
+    if (messageTimer > 0) {
+
+        messageTimer -= delta;
+
+    }
+
+    else {
+
+        message.style.opacity = "0";
 
     }
 
 }
 
-/*
-====================================================
- ИИ МАНЕКЕНА
-====================================================
-*/
 
-function updateDummy() {
+// ======================================================
+// GAME LOOP
+// ======================================================
 
-    if (dummy.hp <= 0) {
-        return;
-    }
+let lastTime =
+    performance.now();
 
-    const dx =
-        player.x -
-        dummy.x;
 
-    const dy =
-        player.y -
-        dummy.y;
+function loop(time) {
 
-    const distance =
-        Math.sqrt(
-            dx * dx +
-            dy * dy
+    const delta =
+        Math.min(
+            time - lastTime,
+            50
         );
 
-    /*
-        Идёт к игроку
-    */
+    lastTime = time;
 
-    if (
-        distance > 80 &&
-        distance < 600
-    ) {
 
-        const angle =
-            Math.atan2(
-                dy,
-                dx
-            );
+    update(delta);
 
-        const speed = 0.35;
 
-        const newX =
-            dummy.x +
-            Math.cos(angle) *
-            speed;
+    // Мир
 
-        const newY =
-            dummy.y +
-            Math.sin(angle) *
-            speed;
+    drawWorld();
 
-        if (!wallAt(newX, newY)) {
 
-            dummy.x = newX;
-            dummy.y = newY;
+    // Манекены и рычаг
 
-        }
+    drawSprites();
 
-    }
 
-    /*
-        Атака
-    */
+    // Оружие
 
-    if (distance < 65) {
+    drawWeapon();
 
-        dummy.attackCooldown++;
 
-        if (
-            dummy.attackCooldown > 60
-        ) {
-
-            player.hp -= 5;
-
-            player.hp =
-                Math.max(
-                    0,
-                    player.hp
-                );
-
-            hpElement.textContent =
-                player.hp;
-
-            dummy.attackCooldown = 0;
-
-            if (player.hp <= 0) {
-
-                messageElement.textContent =
-                    "ТЫ ПРОИГРАЛ";
-
-            }
-
-        }
-
-    } else {
-
-        dummy.attackCooldown = 0;
-
-    }
+    requestAnimationFrame(loop);
 
 }
 
-/*
-====================================================
- ОБНОВЛЕНИЕ ИГРЫ
-====================================================
-*/
 
-function update() {
-
-    if (player.hp <= 0) {
-        return;
-    }
-
-    /*
-        Поворот
-    */
-
-    if (input.turnLeft) {
-        player.angle -= 0.045;
-    }
-
-    if (input.turnRight) {
-        player.angle += 0.045;
-    }
-
-    /*
-        Движение
-    */
-
-    let moveX = 0;
-    let moveY = 0;
-
-    const cos =
-        Math.cos(player.angle);
-
-    const sin =
-        Math.sin(player.angle);
-
-    if (input.forward) {
-
-        moveX +=
-            cos *
-            player.speed;
-
-        moveY +=
-            sin *
-            player.speed;
-
-    }
-
-    if (input.backward) {
-
-        moveX -=
-            cos *
-            player.speed;
-
-        moveY -=
-            sin *
-            player.speed;
-
-    }
-
-    if (input.left) {
-
-        moveX +=
-            sin *
-            player.speed;
-
-        moveY -=
-            cos *
-            player.speed;
-
-    }
-
-    if (input.right) {
-
-        moveX -=
-            sin *
-            player.speed;
-
-        moveY +=
-            cos *
-            player.speed;
-
-    }
-
-    movePlayer(
-        moveX,
-        moveY
-    );
-
-    /*
-        Манекен
-    */
-
-    updateDummy();
-
-    if (dummy.hitTimer > 0) {
-        dummy.hitTimer--;
-    }
-
-}
-
-/*
-====================================================
- РЕНДЕР
-====================================================
-*/
-
-function render() {
-
-    drawSkyAndFloor();
-
-    renderWalls();
-
-    renderDummy();
-
-}
-
-/*
-====================================================
- GAME LOOP
-====================================================
-*/
-
-function gameLoop() {
-
-    update();
-
-    render();
-
-    requestAnimationFrame(
-        gameLoop
-    );
-
-}
-
-gameLoop();
-
-/*
-====================================================
- МОБИЛЬНЫЕ КНОПКИ
-====================================================
-*/
-
-function holdButton(
-    elementId,
-    property
-) {
-
-    const element =
-        document.getElementById(
-            elementId
-        );
-
-    function start(event) {
-
-        event.preventDefault();
-
-        input[property] = true;
-
-    }
-
-    function stop(event) {
-
-        event.preventDefault();
-
-        input[property] = false;
-
-    }
-
-    element.addEventListener(
-        "pointerdown",
-        start
-    );
-
-    element.addEventListener(
-        "pointerup",
-        stop
-    );
-
-    element.addEventListener(
-        "pointercancel",
-        stop
-    );
-
-    element.addEventListener(
-        "pointerleave",
-        stop
-    );
-
-}
-
-holdButton(
-    "forward",
-    "forward"
-);
-
-holdButton(
-    "moveBack",
-    "backward"
-);
-
-holdButton(
-    "moveLeft",
-    "left"
-);
-
-holdButton(
-    "moveRight",
-    "right"
-);
-
-holdButton(
-    "turnLeft",
-    "turnLeft"
-);
-
-holdButton(
-    "turnRight",
-    "turnRight"
-);
-
-/*
-====================================================
- КНОПКА УДАРА
-====================================================
-*/
-
-document
-    .getElementById("attack")
-    .addEventListener(
-        "pointerdown",
-        function(event) {
-
-            event.preventDefault();
-
-            punch();
-
-        }
-    );
-
-/*
-====================================================
- КЛАВИАТУРА
-====================================================
-*/
-
-window.addEventListener(
-    "keydown",
-    function(event) {
-
-        if (event.code === "KeyW") {
-            input.forward = true;
-        }
-
-        if (event.code === "KeyS") {
-            input.backward = true;
-        }
-
-        if (event.code === "KeyA") {
-            input.left = true;
-        }
-
-        if (event.code === "KeyD") {
-            input.right = true;
-        }
-
-        if (event.code === "ArrowLeft") {
-            input.turnLeft = true;
-        }
-
-        if (event.code === "ArrowRight") {
-            input.turnRight = true;
-        }
-
-        if (event.code === "Space") {
-            punch();
-        }
-
-    }
-);
-
-window.addEventListener(
-    "keyup",
-    function(event) {
-
-        if (event.code === "KeyW") {
-            input.forward = false;
-        }
-
-        if (event.code === "KeyS") {
-            input.backward = false;
-        }
-
-        if (event.code === "KeyA") {
-            input.left = false;
-        }
-
-        if (event.code === "KeyD") {
-            input.right = false;
-        }
-
-        if (event.code === "ArrowLeft") {
-            input.turnLeft = false;
-        }
-
-        if (event.code === "ArrowRight") {
-            input.turnRight = false;
-        }
-
-    }
-);
+requestAnimationFrame(loop);
