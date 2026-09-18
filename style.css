@@ -2,6 +2,8 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
     touch-action: none;
 }
 
@@ -11,43 +13,19 @@ body {
     height: 100%;
     overflow: hidden;
     background: #000;
-    font-family: Arial, sans-serif;
 }
 
 #game {
     position: fixed;
-    left: 0;
-    top: 0;
+    inset: 0;
 
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    height: 100%;
 
-    background: #111;
     display: block;
 }
 
-#hud {
-    position: fixed;
-    top: 15px;
-    left: 15px;
-
-    color: white;
-    font-size: 18px;
-    font-weight: bold;
-
-    text-shadow: 2px 2px #000;
-
-    z-index: 10;
-}
-
-#enemyHealth {
-    margin-top: 6px;
-}
-
-#combo {
-    margin-top: 6px;
-    color: #ffd000;
-}
+/* Прицел */
 
 #crosshair {
     position: fixed;
@@ -59,51 +37,41 @@ body {
 
     color: white;
 
+    font-family: Arial;
     font-size: 28px;
     font-weight: bold;
 
-    z-index: 10;
+    text-shadow:
+        1px 1px 2px black,
+        -1px -1px 2px black;
 
     pointer-events: none;
-}
-
-#message {
-    position: fixed;
-
-    left: 50%;
-    top: 70px;
-
-    transform: translateX(-50%);
-
-    color: white;
-
-    font-size: 14px;
-    text-align: center;
-
-    text-shadow: 2px 2px #000;
 
     z-index: 10;
-
-    pointer-events: none;
 }
+
+
+/* Кнопка удара */
 
 #attackButton {
+
     position: fixed;
 
-    right: 30px;
-    bottom: 30px;
+    right: 25px;
+    bottom: 25px;
 
-    width: 110px;
-    height: 110px;
+    width: 105px;
+    height: 105px;
 
     border-radius: 50%;
 
     border: 3px solid white;
 
-    background: #333;
+    background: rgba(50, 50, 50, 0.75);
+
     color: white;
 
-    font-size: 17px;
+    font-size: 18px;
     font-weight: bold;
 
     z-index: 20;
@@ -112,21 +80,36 @@ body {
 }
 
 #attackButton:active {
-    background: #777;
-    transform: scale(0.92);
+
+    transform: scale(0.9);
+
+    background: rgba(120, 120, 120, 0.9);
 }
 
-@media (max-width: 600px) {
 
-    #attackButton {
-        width: 95px;
-        height: 95px;
+/* Название удара */
 
-        right: 20px;
-        bottom: 20px;
-    }
+#comboText {
 
-    #hud {
-        font-size: 15px;
-    }
+    position: fixed;
+
+    left: 50%;
+    top: 70%;
+
+    transform: translate(-50%, -50%);
+
+    color: white;
+
+    font-family: Arial;
+    font-size: 25px;
+    font-weight: bold;
+
+    text-shadow:
+        2px 2px 4px black;
+
+    pointer-events: none;
+
+    z-index: 15;
+
+    opacity: 0;
 }
