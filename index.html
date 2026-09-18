@@ -2,81 +2,40 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DOOM Style Prototype</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Mini 3D Shooter</title>
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
 <div id="game">
-
     <canvas id="screen"></canvas>
 
-    <!-- HUD -->
     <div id="hud">
-
-        <div id="health">
-            HP <span id="hp">100</span>
-        </div>
-
-        <div id="ammo">
-            КУЛАКИ
-        </div>
-
-        <div id="crosshair">+</div>
-
-        <div id="enemyHealth">
-            DUMMY <span id="dummyHp">100</span>
-        </div>
-
+        <div class="health">HP: <span id="hp">100</span></div>
+        <div class="ammo">AMMO: <span id="ammo">30</span></div>
     </div>
 
-    <!-- Кулаки -->
+    <div id="crosshair">+</div>
+
     <div id="weapon">
-
-        <div class="arm leftArm">
-            <div class="hand"></div>
-        </div>
-
-        <div class="arm rightArm">
-            <div class="hand"></div>
-        </div>
-
-    </div>
-
-    <!-- Мобильное управление -->
-    <div id="mobileControls">
-
-        <div id="movement">
-
-            <button id="forward">▲</button>
-
-            <button id="moveLeft">◀</button>
-
-            <button id="moveBack">▼</button>
-
-            <button id="moveRight">▶</button>
-
-        </div>
-
-        <div id="turn">
-
-            <button id="turnLeft">⟲</button>
-            <button id="turnRight">⟳</button>
-
-        </div>
-
-        <button id="attack">УДАР</button>
-
+        <div class="gun"></div>
     </div>
 
     <div id="message"></div>
 
+    <div id="mobileControls">
+        <div class="movement">
+            <button id="forward">▲</button>
+            <button id="left">◀</button>
+            <button id="back">▼</button>
+            <button id="right">▶</button>
+        </div>
+
+        <button id="shoot">🔫</button>
+    </div>
 </div>
 
 <script src="game.js"></script>
-
 </body>
 </html>
