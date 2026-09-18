@@ -3,214 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport"
-          content="width=device-width, initial-scale=1.0,
-                   maximum-scale=1.0, user-scalable=no">
-
-    <title>Blood Night</title>
-
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>2.5D Shooter Test</title>
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
 <div id="game">
 
-    <!-- =========================
-         ОФИС
-    ========================== -->
+    <canvas id="screen"></canvas>
 
-    <div id="office" class="screen">
+    <div id="hud">
+        <div id="crosshair">+</div>
 
-        <div class="office-name">
-            BLOOD GLOW
+        <div id="health">
+            HP: <span id="hp">100</span>
         </div>
 
-        <div class="office">
+        <div id="status">МАНЕКЕН: 100 HP</div>
+    </div>
 
-            <div class="left-door"></div>
-            <div class="right-door"></div>
+    <!-- Управление -->
+    <div id="controls">
 
-            <div class="office-dark"></div>
-
-            <div class="desk"></div>
-
+        <div id="movePad">
+            <button id="up">▲</button>
+            <button id="left">◀</button>
+            <button id="right">▶</button>
+            <button id="down">▼</button>
         </div>
 
-        <div class="hud">
-
-            <div id="officeTime">
-                12 AM
-            </div>
-
-            <button id="openCameras">
-                📹 КАМЕРЫ
-            </button>
-
-            <button id="flashButton">
-                ⚡ ВСПЫШКА
-            </button>
-
+        <div id="lookButtons">
+            <button id="turnLeft">⟲</button>
+            <button id="turnRight">⟳</button>
         </div>
+
+        <button id="attack">УДАР</button>
 
     </div>
 
-
-    <!-- =========================
-         КАМЕРЫ
-    ========================== -->
-
-    <div id="cameras" class="screen">
-
-        <div class="camera-top">
-
-            <div id="cameraTitle">
-                CAM 01 — ГЛАВНЫЙ ЗАЛ
-            </div>
-
-            <div id="cameraTime">
-                12 AM
-            </div>
-
-        </div>
-
-
-        <div id="cameraView">
-
-            <div class="camera-location"
-                 id="locationText">
-                ГЛАВНЫЙ ЗАЛ
-            </div>
-
-            <div id="lichiCamera"
-                 class="lichi hidden">
-
-                <div class="lichi-face">
-                    ●   ●
-                </div>
-
-                <div class="lichi-mouth">
-                    ─────
-                </div>
-
-                <div class="lichi-name">
-                    LICHИ
-                </div>
-
-            </div>
-
-            <div class="static"></div>
-
-        </div>
-
-
-        <!-- =========================
-             КАРТА КАМЕР
-        ========================== -->
-
-        <div class="camera-map">
-
-            <button class="camera-button active"
-                    data-camera="1">
-                CAM 01
-            </button>
-
-            <button class="camera-button"
-                    data-camera="2">
-                CAM 02
-            </button>
-
-            <button class="camera-button"
-                    data-camera="3">
-                CAM 03
-            </button>
-
-            <button class="camera-button"
-                    data-camera="4">
-                CAM 04
-            </button>
-
-            <button class="camera-button"
-                    data-camera="5">
-                CAM 05
-            </button>
-
-            <button class="camera-button"
-                    data-camera="6">
-                CAM 06
-            </button>
-
-            <button class="camera-button"
-                    data-camera="7">
-                CAM 07
-            </button>
-
-            <button class="camera-button"
-                    data-camera="8">
-                CAM 08
-            </button>
-
-        </div>
-
-
-        <button id="cameraFlash"
-                class="camera-flash">
-            ⚡ ВСПЫШКА
-        </button>
-
-        <button id="closeCameras"
-                class="close-cameras">
-            ← В ОФИС
-        </button>
-
-    </div>
-
-
-    <!-- =========================
-         GAME OVER
-    ========================== -->
-
-    <div id="gameOver"
-         class="game-over screen">
-
-        <div class="game-over-title">
-            GAME OVER
-        </div>
-
-        <div id="gameOverText">
-            Lichi поймал тебя.
-        </div>
-
-        <button id="restart">
-            НАЧАТЬ ЗАНОВО
-        </button>
-
-    </div>
-
-
-    <!-- =========================
-         ПОБЕДА
-    ========================== -->
-
-    <div id="winScreen"
-         class="win-screen screen">
-
-        <div class="win-title">
-            6 AM
-        </div>
-
-        <div>
-            ТЫ ПЕРЕЖИЛ ЭТУ НОЧЬ
-        </div>
-
-        <button id="winRestart">
-            ЕЩЁ РАЗ
-        </button>
-
+    <!-- Кулаки -->
+    <div id="fists">
+        <div class="fist leftFist"></div>
+        <div class="fist rightFist"></div>
     </div>
 
 </div>
 
 <script src="game.js"></script>
-
 </body>
 </html>
