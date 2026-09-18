@@ -1,0 +1,616 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+
+    background: #000;
+    color: white;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+}
+
+body {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+button {
+    border: 0;
+    outline: none;
+
+    color: white;
+    background: #151515;
+
+    font-weight: bold;
+
+    cursor: pointer;
+
+    touch-action: manipulation;
+}
+
+button:active {
+    transform: scale(.96);
+}
+
+
+/* =================================
+   ОБЩИЕ ЭКРАНЫ
+================================= */
+
+.screen {
+    position: absolute;
+
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+
+    display: none;
+}
+
+.screen.active {
+    display: block;
+}
+
+
+/* =================================
+   ОФИС
+================================= */
+
+#office {
+    background: #030303;
+}
+
+.office-name {
+    position: absolute;
+
+    top: 15px;
+    left: 20px;
+
+    z-index: 20;
+
+    font-size: 22px;
+
+    letter-spacing: 4px;
+
+    color: #ddd;
+}
+
+.office {
+    position: absolute;
+
+    left: 0;
+    right: 0;
+
+    top: 55px;
+    bottom: 80px;
+
+    overflow: hidden;
+
+    background:
+        radial-gradient(
+            ellipse at center,
+            #252525 0%,
+            #111 35%,
+            #030303 80%
+        );
+}
+
+
+/* двери */
+
+.left-door,
+.right-door {
+    position: absolute;
+
+    top: 5%;
+    bottom: 5%;
+
+    width: 13%;
+
+    background:
+        repeating-linear-gradient(
+            90deg,
+            #151515 0px,
+            #151515 8px,
+            #080808 9px,
+            #080808 18px
+        );
+
+    border: 2px solid #222;
+}
+
+.left-door {
+    left: 0;
+}
+
+.right-door {
+    right: 0;
+}
+
+.office-dark {
+    position: absolute;
+
+    inset: 0;
+
+    background:
+        radial-gradient(
+            ellipse at center,
+            transparent 5%,
+            rgba(0,0,0,.35) 45%,
+            rgba(0,0,0,.95) 100%
+        );
+}
+
+
+/* стол */
+
+.desk {
+    position: absolute;
+
+    bottom: 0;
+    left: 10%;
+
+    width: 80%;
+    height: 17%;
+
+    background: #111;
+
+    border-top: 5px solid #222;
+
+    box-shadow:
+        0 -10px 25px rgba(0,0,0,.8);
+}
+
+
+/* =================================
+   HUD
+================================= */
+
+.hud {
+    position: absolute;
+
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    height: 80px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    padding: 10px 15px;
+
+    background: #080808;
+
+    border-top: 2px solid #222;
+}
+
+#officeTime {
+    font-size: 22px;
+
+    font-weight: bold;
+}
+
+#openCameras,
+#flashButton {
+    height: 50px;
+
+    padding: 0 16px;
+
+    border: 2px solid #444;
+
+    font-size: 14px;
+}
+
+#flashButton {
+    display: none;
+}
+
+
+/* =================================
+   КАМЕРЫ
+================================= */
+
+#cameras {
+    background: #050505;
+}
+
+.camera-top {
+    position: absolute;
+
+    top: 0;
+    left: 0;
+    right: 0;
+
+    height: 55px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    padding: 0 15px;
+
+    background: #101010;
+
+    border-bottom: 2px solid #333;
+
+    z-index: 20;
+}
+
+#cameraTitle {
+    font-size: 14px;
+
+    font-weight: bold;
+}
+
+#cameraTime {
+    font-size: 20px;
+
+    font-weight: bold;
+}
+
+
+/* =================================
+   ВИДЕО С КАМЕРЫ
+================================= */
+
+#cameraView {
+    position: absolute;
+
+    top: 55px;
+    left: 0;
+    right: 0;
+
+    bottom: 165px;
+
+    overflow: hidden;
+
+    background:
+        radial-gradient(
+            ellipse at center,
+            #292929 0%,
+            #111 45%,
+            #020202 100%
+        );
+}
+
+.camera-location {
+    position: absolute;
+
+    top: 15px;
+    left: 15px;
+
+    z-index: 10;
+
+    padding: 7px 10px;
+
+    background: rgba(0,0,0,.65);
+
+    font-size: 13px;
+
+    letter-spacing: 1px;
+}
+
+
+/* =================================
+   ПОМЕХИ
+================================= */
+
+.static {
+    position: absolute;
+
+    inset: 0;
+
+    opacity: .13;
+
+    pointer-events: none;
+
+    background:
+        repeating-linear-gradient(
+            0deg,
+            transparent 0px,
+            transparent 3px,
+            rgba(255,255,255,.15) 4px
+        );
+
+    animation: staticMove .08s infinite;
+}
+
+@keyframes staticMove {
+
+    0% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(2px);
+    }
+
+    100% {
+        transform: translateY(-2px);
+    }
+}
+
+
+/* =================================
+   LICHИ
+================================= */
+
+.lichi {
+    position: absolute;
+
+    left: 50%;
+    top: 50%;
+
+    transform: translate(-50%, -50%);
+
+    width: 130px;
+    height: 180px;
+
+    background:
+        linear-gradient(
+            90deg,
+            #111,
+            #333,
+            #111
+        );
+
+    border-radius: 45% 45% 20% 20%;
+
+    box-shadow:
+        0 0 25px #000;
+
+    z-index: 5;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+}
+
+.lichi-face {
+    font-size: 27px;
+
+    letter-spacing: 15px;
+
+    margin-left: 15px;
+
+    color: #eee;
+}
+
+.lichi-mouth {
+    margin-top: 25px;
+
+    font-size: 22px;
+}
+
+.lichi-name {
+    margin-top: 20px;
+
+    font-size: 12px;
+
+    letter-spacing: 3px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+
+/* =================================
+   КАРТА
+================================= */
+
+.camera-map {
+    position: absolute;
+
+    left: 10px;
+    right: 10px;
+    bottom: 85px;
+
+    height: 75px;
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, 1fr);
+
+    gap: 6px;
+
+    padding: 5px;
+
+    background: #0c0c0c;
+
+    border: 2px solid #333;
+}
+
+.camera-button {
+    background: #161616;
+
+    border: 1px solid #444;
+
+    font-size: 12px;
+}
+
+.camera-button.active {
+    background: #444;
+
+    border-color: white;
+}
+
+
+/* =================================
+   КНОПКИ КАМЕРЫ
+================================= */
+
+.camera-flash {
+    position: absolute;
+
+    left: 10px;
+    bottom: 15px;
+
+    height: 55px;
+
+    padding: 0 20px;
+
+    border: 2px solid #555;
+
+    background: #151515;
+
+    font-size: 14px;
+}
+
+.close-cameras {
+    position: absolute;
+
+    right: 10px;
+    bottom: 15px;
+
+    height: 55px;
+
+    padding: 0 20px;
+
+    border: 2px solid #555;
+
+    font-size: 14px;
+}
+
+
+/* =================================
+   ВСПЫШКА
+================================= */
+
+.flash-effect {
+    position: fixed;
+
+    inset: 0;
+
+    background: white;
+
+    z-index: 999;
+
+    animation: flash .25s ease-out;
+}
+
+@keyframes flash {
+
+    0% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+
+/* =================================
+   GAME OVER
+================================= */
+
+.game-over,
+.win-screen {
+    z-index: 1000;
+
+    background: #000;
+
+    display: none;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    text-align: center;
+
+    gap: 25px;
+}
+
+.game-over.active,
+.win-screen.active {
+    display: flex;
+}
+
+.game-over-title {
+    font-size: 45px;
+
+    font-weight: bold;
+
+    letter-spacing: 5px;
+}
+
+#gameOverText {
+    color: #aaa;
+}
+
+.game-over button,
+.win-screen button {
+    padding: 15px 25px;
+
+    border: 2px solid #555;
+}
+
+.win-title {
+    font-size: 70px;
+
+    font-weight: bold;
+
+    letter-spacing: 5px;
+}
+
+
+/* =================================
+   ТЕЛЕФОН
+================================= */
+
+@media (max-width: 600px) {
+
+    .office-name {
+        font-size: 16px;
+    }
+
+    .camera-map {
+        height: 70px;
+    }
+
+    .camera-button {
+        font-size: 10px;
+    }
+
+    #cameraTitle {
+        font-size: 11px;
+    }
+
+    #cameraTime {
+        font-size: 16px;
+    }
+
+    .camera-flash,
+    .close-cameras {
+        height: 48px;
+
+        padding: 0 12px;
+
+        font-size: 12px;
+    }
+}
