@@ -12,15 +12,48 @@ const ctx =
     canvas.getContext("2d");
 
 
+function resizeCanvas() {
+
+    canvas.width =
+        Math.max(
+            320,
+            window.innerWidth
+        );
+
+    canvas.height =
+        Math.max(
+            240,
+            window.innerHeight
+        );
+}
+
+
+window.addEventListener(
+    "resize",
+    resizeCanvas
+);
+
+resizeCanvas();
+
+
+/* =========================================================
+   UI
+========================================================= */
+
 const joystick =
-    document.getElementById("joystick");
+    document.getElementById(
+        "joystick"
+    );
 
 const stick =
-    document.getElementById("stick");
-
+    document.getElementById(
+        "stick"
+    );
 
 const shootButton =
-    document.getElementById("shootButton");
+    document.getElementById(
+        "shootButton"
+    );
 
 const interactButton =
     document.getElementById(
@@ -38,9 +71,10 @@ const weaponName =
     );
 
 
-/* =========================================================
-   STYLE UI
-========================================================= */
+const styleBox =
+    document.getElementById(
+        "styleBox"
+    );
 
 const styleRank =
     document.getElementById(
@@ -59,39 +93,7 @@ const stylePoints =
 
 
 /* =========================================================
-   RESIZE
-========================================================= */
-
-function resize() {
-
-    canvas.width =
-        Math.max(
-            1,
-            Math.floor(
-                window.innerWidth
-            )
-        );
-
-    canvas.height =
-        Math.max(
-            1,
-            Math.floor(
-                window.innerHeight
-            )
-        );
-}
-
-
-window.addEventListener(
-    "resize",
-    resize
-);
-
-resize();
-
-
-/* =========================================================
-   TEXTURES КУЛАКОВ
+   PNG
 ========================================================= */
 
 const leftFist =
@@ -124,21 +126,24 @@ rightFist.onload =
     };
 
 
+/*
+   Если PNG отсутствует,
+   ничего страшного.
+*/
+
 leftFist.onerror =
     function () {
 
-        console.log(
-            "left_fist.png не найден"
-        );
+        leftFistReady =
+            false;
     };
 
 
 rightFist.onerror =
     function () {
 
-        console.log(
-            "right_fist.png не найден"
-        );
+        rightFistReady =
+            false;
     };
 
 
@@ -178,6 +183,7 @@ const map = [
     "#..........#",
 
     "############"
+
 ];
 
 
@@ -206,6 +212,10 @@ const player = {
 };
 
 
+/* =========================================================
+   RENDER
+========================================================= */
+
 const FOV =
     Math.PI / 3;
 
@@ -213,7 +223,7 @@ const MAX_DEPTH =
     20;
 
 const RAYS =
-    240;
+    220;
 
 
 /* =========================================================
@@ -233,6 +243,7 @@ let enemies = [
         alive: true,
 
         hit: 0
+
     }
 
 ];
@@ -244,9 +255,10 @@ let enemies = [
 
 const lever = {
 
-    x: 9.2,
+    x: 9,
 
     y: 2
+
 };
 
 
@@ -257,48 +269,89 @@ const lever = {
 let weapon =
     "fists";
 
-
 let weaponAnimation =
     0;
-
 
 let muzzleFlash =
     0;
 
 
 /* =========================================================
-   STYLE SYSTEM
+   КЛАВИАТУРА
 ========================================================= */
 
-/*
-   stylePoints — текущие очки стиля.
+const keys = {};
 
-   combo — количество успешных
-   действий в текущем комбо.
 
-   styleMultiplier — множитель.
+window.addEventListener(
+    "keydown",
+    function (e) {
 
-   lastStyleAction — последнее действие.
-*/
+        keys[e.code] =
+            true;
+
+
+        if (
+            e.code === "Space"
+        ) {
+
+            e.preventDefault();
+
+            shoot();
+        }
+
+
+        if (
+            e.code === "KeyE"
+        ) {
+
+            interact();
+        }
+
+
+        if (
+            e.code === "KeyQ"
+        ) {
+
+            switchWeapon();
+        }
+    }
+);
+
+
+window.addEventListener(
+    "keyup",
+    function (e) {
+
+        keys[e.code] =
+            false;
+    }
+);
+
+
+/* =========================================================
+   STYLE
+========================================================= */
 
 let stylePoints = 0;
 
-let combo = 0;
+let styleCombo = 0;
 
 let styleMultiplier = 1;
 
 let lastStyleAction = "";
 
+let styleVisible = false;
+
 let styleTimer = 0;
 
 
 /*
-   Чем меньше значение,
-   тем быстрее стиль падает.
+   10 секунд.
 */
 
-const STYLE_DECAY_TIME =
-    4500;
+const STYLE_TIMEOUT =
+    10000;
 
 
 /* =========================================================
@@ -310,36 +363,42 @@ function getStyleRank() {
     if (
         stylePoints >= 1800
     ) {
+
         return "SSS";
     }
 
     if (
         stylePoints >= 1200
     ) {
+
         return "SS";
     }
 
     if (
         stylePoints >= 750
     ) {
+
         return "S";
     }
 
     if (
         stylePoints >= 450
     ) {
+
         return "A";
     }
 
     if (
         stylePoints >= 250
     ) {
+
         return "B";
     }
 
     if (
         stylePoints >= 100
     ) {
+
         return "C";
     }
 
@@ -348,7 +407,7 @@ function getStyleRank() {
 
 
 /* =========================================================
-   STYLE ACTION
+   ДОБАВИТЬ STYLE
 ========================================================= */
 
 function addStyle(
@@ -357,48 +416,36 @@ function addStyle(
 ) {
 
     /*
-       Если повторяем то же действие,
-       бонус уменьшается.
+       Если это новое действие —
+       увеличиваем комбо.
     */
 
     if (
-        action ===
+        action !==
         lastStyleAction
     ) {
 
-        amount *= .55;
+        styleCombo++;
 
     } else {
 
-        combo++;
+        /*
+           Повторение одного действия
+           менее эффективно.
+        */
+
+        amount *= .5;
     }
 
-
-    /*
-       Каждые несколько разных
-       действий увеличивают множитель.
-    */
 
     styleMultiplier =
         Math.min(
             8,
             1 +
             Math.floor(
-                combo / 2
+                styleCombo / 2
             )
         );
-
-
-    /*
-       Минимум ×1.
-    */
-
-    if (
-        styleMultiplier < 1
-    ) {
-
-        styleMultiplier = 1;
-    }
 
 
     const gained =
@@ -415,11 +462,6 @@ function addStyle(
         gained;
 
 
-    /*
-       Не даём числу уходить
-       в бесконечность.
-    */
-
     stylePoints =
         Math.min(
             stylePoints,
@@ -431,8 +473,28 @@ function addStyle(
         action;
 
 
+    /*
+       Самое главное:
+       после КАЖДОГО стильного
+       действия таймер снова
+       становится 10 секунд.
+    */
+
     styleTimer =
-        STYLE_DECAY_TIME;
+        STYLE_TIMEOUT;
+
+
+    /*
+       Style становится видимым
+       только здесь.
+    */
+
+    styleVisible =
+        true;
+
+
+    styleBox.style.display =
+        "block";
 
 
     updateStyleUI();
@@ -440,20 +502,7 @@ function addStyle(
 
 
 /* =========================================================
-   STYLE ПО УБИЙСТВУ
-========================================================= */
-
-function addKillStyle() {
-
-    addStyle(
-        50,
-        "kill"
-    );
-}
-
-
-/* =========================================================
-   STYLE UI
+   UI STYLE
 ========================================================= */
 
 function updateStyleUI() {
@@ -475,7 +524,42 @@ function updateStyleUI() {
 
 
 /* =========================================================
-   СМЕНА ОРУЖИЯ
+   ПОЛНОСТЬЮ УБРАТИТЬ STYLE
+========================================================= */
+
+function hideStyle() {
+
+    styleVisible =
+        false;
+
+
+    stylePoints =
+        0;
+
+
+    styleCombo =
+        0;
+
+
+    styleMultiplier =
+        1;
+
+
+    lastStyleAction =
+        "";
+
+
+    styleTimer =
+        0;
+
+
+    styleBox.style.display =
+        "none";
+}
+
+
+/* =========================================================
+   ОРУЖИЕ
 ========================================================= */
 
 weaponButton.addEventListener(
@@ -492,8 +576,7 @@ weaponButton.addEventListener(
 function switchWeapon() {
 
     if (
-        weapon ===
-        "fists"
+        weapon === "fists"
     ) {
 
         weapon =
@@ -505,8 +588,7 @@ function switchWeapon() {
     }
 
     else if (
-        weapon ===
-        "pistol"
+        weapon === "pistol"
     ) {
 
         weapon =
@@ -525,66 +607,7 @@ function switchWeapon() {
         weaponName.textContent =
             "КУЛАКИ";
     }
-
-
-    weaponAnimation = 0;
 }
-
-
-/* =========================================================
-   КЛАВИАТУРА
-========================================================= */
-
-const keys = {};
-
-
-window.addEventListener(
-    "keydown",
-    function (e) {
-
-        keys[e.code] =
-            true;
-
-
-        if (
-            e.code ===
-            "Space"
-        ) {
-
-            e.preventDefault();
-
-            shoot();
-        }
-
-
-        if (
-            e.code ===
-            "KeyE"
-        ) {
-
-            interact();
-        }
-
-
-        if (
-            e.code ===
-            "KeyQ"
-        ) {
-
-            switchWeapon();
-        }
-    }
-);
-
-
-window.addEventListener(
-    "keyup",
-    function (e) {
-
-        keys[e.code] =
-            false;
-    }
-);
 
 
 /* =========================================================
@@ -613,8 +636,7 @@ function shoot() {
 
 
     if (
-        weapon ===
-        "fists"
+        weapon === "fists"
     ) {
 
         weaponAnimation =
@@ -625,8 +647,7 @@ function shoot() {
     }
 
     else if (
-        weapon ===
-        "pistol"
+        weapon === "pistol"
     ) {
 
         weaponAnimation =
@@ -674,10 +695,6 @@ function punch() {
         1;
 
 
-    /*
-       Попадание кулаком.
-    */
-
     addStyle(
         15,
         "punch"
@@ -695,7 +712,10 @@ function punch() {
             false;
 
 
-        addKillStyle();
+        addStyle(
+            50,
+            "kill"
+        );
     }
 }
 
@@ -742,7 +762,10 @@ function pistol() {
             false;
 
 
-        addKillStyle();
+        addStyle(
+            50,
+            "kill"
+        );
     }
 }
 
@@ -764,11 +787,8 @@ function shotgun() {
         .04,
 
         .08
+
     ];
-
-
-    let hit =
-        false;
 
 
     for (
@@ -795,10 +815,6 @@ function shotgun() {
             1;
 
 
-        hit =
-            true;
-
-
         addStyle(
             25,
             "shotgun"
@@ -816,20 +832,31 @@ function shotgun() {
                 false;
 
 
-            addKillStyle();
+            addStyle(
+                50,
+                "kill"
+            );
         }
     }
 }
 
 
 /* =========================================================
-   ПОИСК ВРАГА
+   ПОИСК ЦЕЛИ
 ========================================================= */
 
 function getTargetEnemy(
     maxDistance,
-    offset = 0
+    offset
 ) {
+
+    if (
+        offset === undefined
+    ) {
+
+        offset = 0;
+    }
+
 
     let result =
         null;
@@ -951,7 +978,8 @@ function interact() {
 
 
     if (
-        distance > 1.5
+        distance >
+        1.5
     ) {
 
         return;
@@ -963,7 +991,7 @@ function interact() {
 
 
 /* =========================================================
-   СПАВН
+   SPAWN
 ========================================================= */
 
 function spawnEnemy() {
@@ -979,6 +1007,7 @@ function spawnEnemy() {
         {x:8,y:8},
 
         {x:6,y:5}
+
     ];
 
 
@@ -1045,13 +1074,13 @@ function spawnEnemy() {
 
                 hit:
                     0
+
             });
 
 
             /*
-               Само использование
-               рычага тоже немного
-               поддерживает стиль.
+               Рычаг тоже считается
+               стильным действием.
             */
 
             addStyle(
@@ -1073,8 +1102,8 @@ function spawnEnemy() {
 let joystickActive =
     false;
 
-
 let joyX = 0;
+
 let joyY = 0;
 
 
@@ -1094,7 +1123,7 @@ joystick.addEventListener(
                 e.pointerId
             );
 
-        } catch (_) {}
+        } catch (error) {}
 
 
         updateJoystick(e);
@@ -1136,12 +1165,9 @@ function resetJoystick() {
     joystickActive =
         false;
 
+    joyX = 0;
 
-    joyX =
-        0;
-
-    joyY =
-        0;
+    joyY = 0;
 
 
     stick.style.left =
@@ -1217,21 +1243,24 @@ function updateJoystick(e) {
 
 
     stick.style.left =
-        `calc(50% + ${x}px)`;
+        "calc(50% + " +
+        x +
+        "px)";
 
 
     stick.style.top =
-        `calc(50% + ${y}px)`;
+        "calc(50% + " +
+        y +
+        "px)";
 }
 
 
 /* =========================================================
-   ПОВОРОТ КАМЕРЫ
+   LOOK
 ========================================================= */
 
 let lookActive =
     false;
-
 
 let lastLookX =
     0;
@@ -1265,7 +1294,7 @@ canvas.addEventListener(
                 e.pointerId
             );
 
-        } catch (_) {}
+        } catch (error) {}
     }
 );
 
@@ -1288,7 +1317,8 @@ canvas.addEventListener(
 
 
         player.angle +=
-            dx * .006;
+            dx *
+            .006;
 
 
         lastLookX =
@@ -1318,7 +1348,7 @@ canvas.addEventListener(
 
 
 /* =========================================================
-   СТЕНЫ
+   WALL
 ========================================================= */
 
 function isWall(
@@ -1328,7 +1358,6 @@ function isWall(
 
     const mx =
         Math.floor(x);
-
 
     const my =
         Math.floor(y);
@@ -1359,20 +1388,11 @@ function movePlayer(
     delta
 ) {
 
-    const forward =
+    let forward =
         -joyY;
 
-
-    const strafe =
+    let strafe =
         joyX;
-
-
-    let keyboardForward =
-        0;
-
-
-    let keyboardStrafe =
-        0;
 
 
     if (
@@ -1380,7 +1400,7 @@ function movePlayer(
         keys["ArrowUp"]
     ) {
 
-        keyboardForward++;
+        forward += 1;
     }
 
 
@@ -1389,7 +1409,7 @@ function movePlayer(
         keys["ArrowDown"]
     ) {
 
-        keyboardForward--;
+        forward -= 1;
     }
 
 
@@ -1398,7 +1418,7 @@ function movePlayer(
         keys["ArrowRight"]
     ) {
 
-        keyboardStrafe++;
+        strafe += 1;
     }
 
 
@@ -1407,45 +1427,36 @@ function movePlayer(
         keys["ArrowLeft"]
     ) {
 
-        keyboardStrafe--;
+        strafe -= 1;
     }
-
-
-    const f =
-        forward +
-        keyboardForward;
-
-
-    const s =
-        strafe +
-        keyboardStrafe;
 
 
     const length =
         Math.sqrt(
-            f * f +
-            s * s
+            forward *
+            forward +
+
+            strafe *
+            strafe
         );
 
 
     if (
-        length <= 0
+        length === 0
     ) {
 
         return;
     }
 
 
-    const nf =
-        f /
+    forward /=
         Math.max(
             length,
             1
         );
 
 
-    const ns =
-        s /
+    strafe /=
         Math.max(
             length,
             1
@@ -1462,13 +1473,13 @@ function movePlayer(
         Math.cos(
             player.angle
         ) *
-        nf *
+        forward *
         speed -
 
         Math.sin(
             player.angle
         ) *
-        ns *
+        strafe *
         speed;
 
 
@@ -1476,13 +1487,13 @@ function movePlayer(
         Math.sin(
             player.angle
         ) *
-        nf *
+        forward *
         speed +
 
         Math.cos(
             player.angle
         ) *
-        ns *
+        strafe *
         speed;
 
 
@@ -1530,7 +1541,6 @@ function castRay(
     const sin =
         Math.sin(angle);
 
-
     const cos =
         Math.cos(angle);
 
@@ -1539,17 +1549,13 @@ function castRay(
         0;
 
 
-    const step =
-        .025;
-
-
     while (
         distance <
         MAX_DEPTH
     ) {
 
         distance +=
-            step;
+            .025;
 
 
         const x =
@@ -1581,7 +1587,7 @@ function castRay(
 
 
 /* =========================================================
-   МИР
+   WORLD
 ========================================================= */
 
 function drawWorld() {
@@ -1589,10 +1595,13 @@ function drawWorld() {
     const w =
         canvas.width;
 
-
     const h =
         canvas.height;
 
+
+    /*
+       Небо
+    */
 
     ctx.fillStyle =
         "#101010";
@@ -1606,6 +1615,10 @@ function drawWorld() {
     );
 
 
+    /*
+       Пол
+    */
+
     ctx.fillStyle =
         "#252525";
 
@@ -1618,36 +1631,31 @@ function drawWorld() {
     );
 
 
-    const rayCount =
+    const rays =
         Math.min(
             RAYS,
-            Math.max(
-                80,
-                Math.floor(
-                    w / 2
-                )
+            Math.floor(
+                w / 2
             )
         );
 
 
-    const columnWidth =
-        w /
-        rayCount;
+    const column =
+        w / rays;
 
 
     for (
         let i = 0;
-        i < rayCount;
+        i < rays;
         i++
     ) {
 
         const cameraX =
-            i /
-            rayCount -
+            i / rays -
             .5;
 
 
-        const rayAngle =
+        const angle =
             player.angle +
             cameraX *
             FOV;
@@ -1655,18 +1663,18 @@ function drawWorld() {
 
         let distance =
             castRay(
-                rayAngle
+                angle
             );
 
 
         distance *=
             Math.cos(
-                rayAngle -
+                angle -
                 player.angle
             );
 
 
-        const wallHeight =
+        const height =
             h /
             Math.max(
                 distance,
@@ -1674,162 +1682,83 @@ function drawWorld() {
             );
 
 
-        const wallTop =
+        const top =
             h / 2 -
-            wallHeight / 2;
+            height / 2;
 
 
         const brightness =
             Math.max(
                 25,
                 180 -
-                distance * 15
+                distance *
+                15
             );
 
 
         ctx.fillStyle =
-            `rgb(${brightness},${brightness},${brightness})`;
+            "rgb(" +
+            brightness +
+            "," +
+            brightness +
+            "," +
+            brightness +
+            ")";
 
 
         ctx.fillRect(
 
-            i *
-            columnWidth,
+            i * column,
 
-            wallTop,
+            top,
 
-            columnWidth + 1,
+            column + 1,
 
-            wallHeight
+            height
         );
     }
 }
 
 
 /* =========================================================
-   СПРАЙТЫ
+   SPRITES
 ========================================================= */
 
 function drawSprites() {
-
-    const sprites = [];
-
 
     for (
         const enemy of enemies
     ) {
 
         if (
-            !enemy.alive
+            enemy.alive
         ) {
 
-            continue;
-        }
-
-
-        sprites.push({
-
-            type:
-                "enemy",
-
-            x:
-                enemy.x,
-
-            y:
-                enemy.y,
-
-            object:
+            drawEnemy(
                 enemy
-        });
-    }
-
-
-    sprites.push({
-
-        type:
-            "lever",
-
-        x:
-            lever.x,
-
-        y:
-            lever.y,
-
-        object:
-            lever
-    });
-
-
-    sprites.sort(
-        function (a,b) {
-
-            return (
-                distanceToPlayer(b) -
-                distanceToPlayer(a)
             );
         }
-    );
-
-
-    for (
-        const sprite of sprites
-    ) {
-
-        drawSprite(
-            sprite
-        );
     }
+
+
+    drawLever();
 }
 
 
 /* =========================================================
-   DISTANCE
+   ENEMY
 ========================================================= */
 
-function distanceToPlayer(
-    sprite
+function drawEnemy(
+    enemy
 ) {
 
     const dx =
-        sprite.x -
+        enemy.x -
         player.x;
 
-
     const dy =
-        sprite.y -
-        player.y;
-
-
-    return Math.sqrt(
-        dx * dx +
-        dy * dy
-    );
-}
-
-
-/* =========================================================
-   SPRITE
-========================================================= */
-
-function drawSprite(
-    sprite
-) {
-
-    const w =
-        canvas.width;
-
-
-    const h =
-        canvas.height;
-
-
-    const dx =
-        sprite.x -
-        player.x;
-
-
-    const dy =
-        sprite.y -
+        enemy.y -
         player.y;
 
 
@@ -1847,7 +1776,7 @@ function drawSprite(
         );
 
 
-    const relativeAngle =
+    const relative =
         normalizeAngle(
             angle -
             player.angle
@@ -1856,42 +1785,46 @@ function drawSprite(
 
     if (
         Math.abs(
-            relativeAngle
+            relative
         ) >
-        FOV *
-        .65
+        FOV / 2
     ) {
 
         return;
     }
 
 
-    const wallDistance =
+    const wall =
         castRay(
             player.angle +
-            relativeAngle
+            relative
         );
 
 
     if (
         distance >
-        wallDistance +
-        .1
+        wall
     ) {
 
         return;
     }
+
+
+    const w =
+        canvas.width;
+
+    const h =
+        canvas.height;
 
 
     const screenX =
         w / 2 +
 
         Math.tan(
-            relativeAngle
+            relative
         ) *
 
         (w / 2) /
-
         Math.tan(
             FOV / 2
         );
@@ -1905,60 +1838,20 @@ function drawSprite(
         );
 
 
-    if (
-        sprite.type ===
-        "enemy"
-    ) {
-
-        drawEnemy(
-            screenX,
-            h / 2,
-            size,
-            sprite.object
-        );
-    }
-
-
-    if (
-        sprite.type ===
-        "lever"
-    ) {
-
-        drawLever(
-            screenX,
-            h / 2,
-            size
-        );
-    }
-}
-
-
-/* =========================================================
-   МАНЕКЕН
-========================================================= */
-
-function drawEnemy(
-    x,
-    centerY,
-    size,
-    enemy
-) {
-
     const scale =
         Math.min(
             size *
             .003,
-
             1.5
         );
 
 
-    const bodyHeight =
+    const body =
         170 *
         scale;
 
 
-    const headSize =
+    const head =
         32 *
         scale;
 
@@ -1971,16 +1864,14 @@ function drawEnemy(
 
     ctx.fillRect(
 
-        x -
-        35 *
-        scale,
+        screenX -
+        35 * scale,
 
-        centerY,
+        h / 2,
 
-        70 *
-        scale,
+        70 * scale,
 
-        bodyHeight
+        body
     );
 
 
@@ -1989,100 +1880,25 @@ function drawEnemy(
 
     ctx.arc(
 
-        x,
+        screenX,
 
-        centerY -
-        35 *
-        scale,
+        h / 2 -
+        35 * scale,
 
-        headSize,
+        head,
 
         0,
 
-        Math.PI *
-        2
+        Math.PI * 2
     );
 
 
     ctx.fill();
 
 
-    ctx.fillRect(
-
-        x -
-        65 *
-        scale,
-
-        centerY +
-        5 *
-        scale,
-
-        22 *
-        scale,
-
-        80 *
-        scale
-    );
-
-
-    ctx.fillRect(
-
-        x +
-        43 *
-        scale,
-
-        centerY +
-        5 *
-        scale,
-
-        22 *
-        scale,
-
-        80 *
-        scale
-    );
-
-
-    ctx.fillRect(
-
-        x -
-        28 *
-        scale,
-
-        centerY +
-        bodyHeight,
-
-        20 *
-        scale,
-
-        80 *
-        scale
-    );
-
-
-    ctx.fillRect(
-
-        x +
-        8 *
-        scale,
-
-        centerY +
-        bodyHeight,
-
-        20 *
-        scale,
-
-        80 *
-        scale
-    );
-
-
-    /* HP BAR */
-
-    const barWidth =
-        80 *
-        scale;
-
+    /*
+       HP
+    */
 
     ctx.fillStyle =
         "#111";
@@ -2090,16 +1906,15 @@ function drawEnemy(
 
     ctx.fillRect(
 
-        x -
-        barWidth / 2,
+        screenX -
+        40 * scale,
 
-        centerY -
-        80 *
-        scale,
+        h / 2 -
+        80 * scale,
 
-        barWidth,
+        80 * scale,
 
-        8
+        7
     );
 
 
@@ -2109,39 +1924,114 @@ function drawEnemy(
 
     ctx.fillRect(
 
-        x -
-        barWidth / 2,
+        screenX -
+        40 * scale,
 
-        centerY -
+        h / 2 -
+        80 * scale,
+
         80 *
-        scale,
-
-        barWidth *
+        scale *
         Math.max(
-            enemy.hp /
-            100,
-
+            enemy.hp / 100,
             0
         ),
 
-        8
+        7
     );
 }
 
 
 /* =========================================================
-   РЫЧАГ
+   LEVER
 ========================================================= */
 
-function drawLever(
-    x,
-    centerY,
-    size
-) {
+function drawLever() {
+
+    const dx =
+        lever.x -
+        player.x;
+
+    const dy =
+        lever.y -
+        player.y;
+
+
+    const distance =
+        Math.sqrt(
+            dx * dx +
+            dy * dy
+        );
+
+
+    const angle =
+        Math.atan2(
+            dy,
+            dx
+        );
+
+
+    const relative =
+        normalizeAngle(
+            angle -
+            player.angle
+        );
+
+
+    if (
+        Math.abs(
+            relative
+        ) >
+        FOV / 2
+    ) {
+
+        return;
+    }
+
+
+    const wall =
+        castRay(
+            player.angle +
+            relative
+        );
+
+
+    if (
+        distance >
+        wall
+    ) {
+
+        return;
+    }
+
+
+    const w =
+        canvas.width;
+
+    const h =
+        canvas.height;
+
+
+    const x =
+        w / 2 +
+
+        Math.tan(
+            relative
+        ) *
+
+        (w / 2) /
+        Math.tan(
+            FOV / 2
+        );
+
 
     const scale =
         Math.min(
-            size *
+            h /
+            Math.max(
+                distance,
+                .1
+            ) *
             .004,
 
             1.5
@@ -2149,7 +2039,7 @@ function drawLever(
 
 
     const y =
-        centerY +
+        h / 2 +
         50 *
         scale;
 
@@ -2161,16 +2051,13 @@ function drawLever(
     ctx.fillRect(
 
         x -
-        18 *
-        scale,
+        18 * scale,
 
         y,
 
-        36 *
-        scale,
+        36 * scale,
 
-        65 *
-        scale
+        65 * scale
     );
 
 
@@ -2180,10 +2067,8 @@ function drawLever(
 
     ctx.lineWidth =
         Math.max(
-            5 *
-            scale,
-
-            2
+            2,
+            5 * scale
         );
 
 
@@ -2191,58 +2076,22 @@ function drawLever(
 
 
     ctx.moveTo(
-
         x,
-
-        y +
-        10 *
-        scale
+        y + 10 * scale
     );
 
 
     ctx.lineTo(
 
         x +
-        25 *
-        scale,
+        25 * scale,
 
         y -
-        30 *
-        scale
+        30 * scale
     );
 
 
     ctx.stroke();
-
-
-    ctx.fillStyle =
-        "#c33";
-
-
-    ctx.beginPath();
-
-
-    ctx.arc(
-
-        x +
-        25 *
-        scale,
-
-        y -
-        30 *
-        scale,
-
-        9 *
-        scale,
-
-        0,
-
-        Math.PI *
-        2
-    );
-
-
-    ctx.fill();
 }
 
 
@@ -2255,7 +2104,6 @@ function drawWeapon() {
     const w =
         canvas.width;
 
-
     const h =
         canvas.height;
 
@@ -2265,13 +2113,11 @@ function drawWeapon() {
 
 
     if (
-        weaponAnimation >
-        0
+        weaponAnimation > 0
     ) {
 
         recoil =
             Math.sin(
-
                 (
                     1 -
                     weaponAnimation /
@@ -2283,8 +2129,7 @@ function drawWeapon() {
 
 
     if (
-        weapon ===
-        "fists"
+        weapon === "fists"
     ) {
 
         drawFists(
@@ -2296,8 +2141,7 @@ function drawWeapon() {
     }
 
     else if (
-        weapon ===
-        "pistol"
+        weapon === "pistol"
     ) {
 
         drawPistol(
@@ -2320,7 +2164,7 @@ function drawWeapon() {
 
 
 /* =========================================================
-   КУЛАКИ С PNG
+   КУЛАКИ
 ========================================================= */
 
 function drawFists(
@@ -2337,10 +2181,17 @@ function drawFists(
         .34;
 
 
+    const y =
+        h *
+        .68 -
+        punch *
+        h *
+        .12;
+
+
     const leftX =
         w *
         .04 +
-
         punch *
         w *
         .09;
@@ -2349,34 +2200,16 @@ function drawFists(
     const rightX =
         w *
         .62 -
-
         punch *
         w *
         .09;
 
-
-    const y =
-        h *
-        .67 -
-
-        punch *
-        h *
-        .12;
-
-
-    /*
-       ЛЕВЫЙ КУЛАК
-    */
 
     if (
         leftFistReady
     ) {
 
         ctx.save();
-
-
-        ctx.globalAlpha =
-            1;
 
 
         ctx.translate(
@@ -2390,11 +2223,15 @@ function drawFists(
 
 
         ctx.rotate(
-
             -punch *
             .12
         );
 
+
+        /*
+           Canvas сохраняет
+           прозрачность PNG.
+        */
 
         ctx.drawImage(
 
@@ -2433,19 +2270,11 @@ function drawFists(
     }
 
 
-    /*
-       ПРАВЫЙ КУЛАК
-    */
-
     if (
         rightFistReady
     ) {
 
         ctx.save();
-
-
-        ctx.globalAlpha =
-            1;
 
 
         ctx.translate(
@@ -2459,7 +2288,6 @@ function drawFists(
 
 
         ctx.rotate(
-
             punch *
             .12
         );
@@ -2534,13 +2362,13 @@ function drawFallbackFist(
 
     ctx.fillRect(
 
-        -size * .5,
+        -size / 2,
 
-        -size * .2,
+        -size / 2,
 
         size,
 
-        size * .7
+        size
     );
 
 
@@ -2551,45 +2379,13 @@ function drawFallbackFist(
     ctx.beginPath();
 
 
-    if (
-        ctx.roundRect
-    ) {
-
-        ctx.roundRect(
-
-            -size *
-            .65,
-
-            -size *
-            .7,
-
-            size *
-            1.3,
-
-            size *
-            .7,
-
-            size *
-            .15
-        );
-
-    } else {
-
-        ctx.rect(
-
-            -size *
-            .65,
-
-            -size *
-            .7,
-
-            size *
-            1.3,
-
-            size *
-            .7
-        );
-    }
+    ctx.arc(
+        0,
+        -size * .25,
+        size * .55,
+        0,
+        Math.PI * 2
+    );
 
 
     ctx.fill();
@@ -2687,8 +2483,7 @@ function drawPistol(
 
 
     if (
-        muzzleFlash >
-        0
+        muzzleFlash > 0
     ) {
 
         ctx.fillStyle =
@@ -2805,8 +2600,7 @@ function drawShotgun(
 
         0,
 
-        Math.PI *
-        2
+        Math.PI * 2
     );
 
 
@@ -2830,8 +2624,7 @@ function drawShotgun(
 
         0,
 
-        Math.PI *
-        2
+        Math.PI * 2
     );
 
 
@@ -2851,8 +2644,7 @@ function drawShotgun(
 
         0,
 
-        Math.PI *
-        2
+        Math.PI * 2
     );
 
 
@@ -2880,7 +2672,7 @@ function drawShotgun(
 
 
 /* =========================================================
-   УГОЛ
+   ANGLE
 ========================================================= */
 
 function normalizeAngle(
@@ -2888,24 +2680,20 @@ function normalizeAngle(
 ) {
 
     while (
-        angle >
-        Math.PI
+        angle > Math.PI
     ) {
 
         angle -=
-            Math.PI *
-            2;
+            Math.PI * 2;
     }
 
 
     while (
-        angle <
-        -Math.PI
+        angle < -Math.PI
     ) {
 
         angle +=
-            Math.PI *
-            2;
+            Math.PI * 2;
     }
 
 
@@ -2930,11 +2718,8 @@ function update(
     );
 
 
-    /* Анимация оружия */
-
     if (
-        weaponAnimation >
-        0
+        weaponAnimation > 0
     ) {
 
         weaponAnimation -=
@@ -2942,21 +2727,16 @@ function update(
 
 
         if (
-            weaponAnimation <
-            0
+            weaponAnimation < 0
         ) {
 
-            weaponAnimation =
-                0;
+            weaponAnimation = 0;
         }
     }
 
 
-    /* Вспышка */
-
     if (
-        muzzleFlash >
-        0
+        muzzleFlash > 0
     ) {
 
         muzzleFlash -=
@@ -2964,112 +2744,67 @@ function update(
 
 
         if (
-            muzzleFlash <
-            0
+            muzzleFlash < 0
         ) {
 
-            muzzleFlash =
-                0;
+            muzzleFlash = 0;
         }
     }
 
-
-    /* Hit flash врага */
 
     for (
         const enemy of enemies
     ) {
 
         if (
-            enemy.hit >
-            0
+            enemy.hit > 0
         ) {
 
             enemy.hit -=
-                delta /
-                100;
+                delta / 100;
 
 
             if (
-                enemy.hit <
-                0
+                enemy.hit < 0
             ) {
 
-                enemy.hit =
-                    0;
+                enemy.hit = 0;
             }
         }
     }
 
 
-    /* =====================================================
-       ПАДЕНИЕ STYLE
-    ===================================================== */
+    /*
+       STYLE TIMER
+
+       Важно:
+       мы НЕ уменьшаем очки каждую
+       миллисекунду.
+
+       Просто ждём 10 секунд
+       после последнего действия.
+    */
 
     if (
-        styleTimer >
-        0
+        styleVisible
     ) {
 
         styleTimer -=
             delta;
 
-    }
-
-    else {
-
-        /*
-           Стиль медленно падает.
-        */
 
         if (
-            stylePoints >
-            0
+            styleTimer <= 0
         ) {
 
-            stylePoints -=
-                delta *
-                .018;
-
-
-            if (
-                stylePoints <
-                0
-            ) {
-
-                stylePoints =
-                    0;
-            }
-
-
-            /*
-               Когда стиль закончился —
-               сбрасываем комбо.
-            */
-
-            if (
-                stylePoints <= 0
-            ) {
-
-                combo =
-                    0;
-
-                styleMultiplier =
-                    1;
-
-                lastStyleAction =
-                    "";
-            }
-
-
-            updateStyleUI();
+            hideStyle();
         }
     }
 }
 
 
 /* =========================================================
-   ГЛАВНЫЙ ЦИКЛ
+   LOOP
 ========================================================= */
 
 function loop(
@@ -3078,15 +2813,12 @@ function loop(
 
     const delta =
         Math.min(
-
+            50,
             Math.max(
+                0,
                 time -
-                lastTime,
-
-                0
-            ),
-
-            50
+                lastTime
+            )
         );
 
 
@@ -3116,7 +2848,9 @@ function loop(
    START
 ========================================================= */
 
-updateStyleUI();
+styleBox.style.display =
+    "none";
+
 
 requestAnimationFrame(
     loop
