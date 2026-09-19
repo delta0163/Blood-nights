@@ -12,6 +12,7 @@
 
 html,
 body {
+
     width: 100%;
     height: 100%;
 
@@ -20,7 +21,17 @@ body {
     background: #000;
 }
 
+body {
+    position: fixed;
+}
+
+
+/* =========================
+   ИГРА
+========================= */
+
 #game {
+
     position: fixed;
 
     left: 0;
@@ -32,9 +43,17 @@ body {
     display: block;
 
     background: #000;
+
+    touch-action: none;
 }
 
+
+/* =========================
+   ПРИЦЕЛ
+========================= */
+
 #crosshair {
+
     position: fixed;
 
     left: 50%;
@@ -44,8 +63,10 @@ body {
 
     color: white;
 
-    font-family: Arial;
-    font-size: 27px;
+    font-family: Arial, sans-serif;
+
+    font-size: 28px;
+
     font-weight: bold;
 
     z-index: 10;
@@ -53,11 +74,17 @@ body {
     pointer-events: none;
 
     text-shadow:
-        1px 1px 3px #000,
-        -1px -1px 3px #000;
+        1px 1px 3px black,
+        -1px -1px 3px black;
 }
 
+
+/* =========================
+   ОРУЖИЕ
+========================= */
+
 #weaponName {
+
     position: fixed;
 
     left: 50%;
@@ -67,18 +94,27 @@ body {
 
     color: white;
 
-    font-family: Arial;
-    font-size: 15px;
-    font-weight: bold;
+    font-family: Arial, sans-serif;
 
-    text-shadow: 2px 2px 4px #000;
+    font-size: 15px;
+
+    font-weight: bold;
 
     z-index: 15;
 
     pointer-events: none;
+
+    text-shadow:
+        2px 2px 4px black;
 }
 
+
+/* =========================
+   КОНТРОЛЫ
+========================= */
+
 #controls {
+
     position: fixed;
 
     inset: 0;
@@ -88,77 +124,110 @@ body {
     pointer-events: none;
 }
 
+
+/* =========================
+   ДЖОЙСТИК
+========================= */
+
 #joystick {
+
     position: absolute;
 
     left: 25px;
     bottom: 25px;
 
-    width: 125px;
-    height: 125px;
+    width: 120px;
+    height: 120px;
 
     border-radius: 50%;
 
-    border: 3px solid rgba(255,255,255,.5);
+    border: 3px solid
+        rgba(255,255,255,.5);
 
-    background: rgba(50,50,50,.35);
+    background:
+        rgba(50,50,50,.35);
 
     pointer-events: auto;
+
+    touch-action: none;
 }
 
+
 #stick {
+
     position: absolute;
 
     left: 50%;
     top: 50%;
 
-    width: 55px;
-    height: 55px;
+    width: 52px;
+    height: 52px;
 
-    margin-left: -27.5px;
-    margin-top: -27.5px;
+    margin-left: -26px;
+    margin-top: -26px;
 
     border-radius: 50%;
 
-    background: rgba(220,220,220,.65);
+    background:
+        rgba(220,220,220,.7);
 }
 
+
+/* =========================
+   КНОПКА ОГНЯ
+========================= */
+
 #shootButton {
+
     position: absolute;
 
     right: 25px;
-    bottom: 30px;
+    bottom: 25px;
 
-    width: 100px;
-    height: 100px;
+    width: 95px;
+    height: 95px;
 
     border-radius: 50%;
 
     border: 2px solid white;
 
+    background:
+        rgba(40,40,40,.75);
+
     color: white;
 
-    background: rgba(40,40,40,.7);
+    font-size: 15px;
 
-    font-size: 16px;
     font-weight: bold;
 
     pointer-events: auto;
 
-    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+
+    -webkit-tap-highlight-color:
+        transparent;
 }
+
 
 #shootButton:active {
+
     transform: scale(.9);
 
-    background: rgba(130,130,130,.8);
+    background:
+        rgba(130,130,130,.8);
 }
 
+
+/* =========================
+   КНОПКА E
+========================= */
+
 #interactButton {
+
     position: absolute;
 
-    right: 140px;
-    bottom: 45px;
+    right: 135px;
+    bottom: 40px;
 
     width: 65px;
     height: 65px;
@@ -167,79 +236,116 @@ body {
 
     border: 2px solid white;
 
+    background:
+        rgba(40,40,40,.75);
+
     color: white;
 
-    background: rgba(40,40,40,.7);
-
     font-size: 22px;
+
     font-weight: bold;
 
     pointer-events: auto;
+
+    touch-action: none;
 }
 
+
+/* =========================
+   СМЕНА ОРУЖИЯ
+========================= */
+
 #weaponButton {
+
     position: absolute;
 
     right: 25px;
-    bottom: 145px;
+    bottom: 135px;
 
-    width: 100px;
-    height: 48px;
+    width: 95px;
+    height: 45px;
 
     border-radius: 12px;
 
     border: 2px solid white;
 
+    background:
+        rgba(40,40,40,.75);
+
     color: white;
 
-    background: rgba(40,40,40,.7);
+    font-size: 11px;
 
-    font-size: 12px;
     font-weight: bold;
 
     pointer-events: auto;
+
+    touch-action: none;
 }
 
+
+/* =========================
+   СООБЩЕНИЕ
+========================= */
+
 #message {
+
     position: fixed;
 
     left: 50%;
     top: 18%;
 
-    transform: translateX(-50%);
+    transform:
+        translateX(-50%);
 
     color: white;
 
-    font-family: Arial;
+    font-family: Arial, sans-serif;
+
     font-size: 18px;
+
     font-weight: bold;
 
     text-align: center;
 
-    text-shadow: 2px 2px 4px black;
+    text-shadow:
+        2px 2px 4px black;
 
     opacity: 0;
-
-    transition: opacity .15s;
 
     z-index: 30;
 
     pointer-events: none;
+
+    white-space: nowrap;
 }
+
+
+/* =========================
+   ТЕЛЕФОН
+========================= */
 
 @media (max-width: 600px) {
 
     #joystick {
-        width: 115px;
-        height: 115px;
+
+        width: 110px;
+        height: 110px;
     }
 
     #shootButton {
-        width: 90px;
-        height: 90px;
+
+        width: 88px;
+        height: 88px;
     }
 
     #weaponButton {
-        bottom: 135px;
+
+        bottom: 125px;
+    }
+
+    #interactButton {
+
+        right: 125px;
     }
 }
