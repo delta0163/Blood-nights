@@ -91,15 +91,13 @@ body {
     right: 18px;
     top: 18px;
 
-    width: 125px;
+    width: 130px;
 
     text-align: right;
 
     color: white;
 
-    font-family:
-        Arial,
-        sans-serif;
+    font-family: Arial, sans-serif;
 
     font-weight: bold;
 
@@ -109,6 +107,12 @@ body {
 
     text-shadow:
         2px 2px 4px black;
+
+    /*
+       СНАЧАЛА ПОЛНОСТЬЮ СКРЫТ
+    */
+
+    display: none;
 }
 
 
@@ -127,8 +131,6 @@ body {
     font-size: 48px;
 
     line-height: 45px;
-
-    margin-top: 2px;
 }
 
 
@@ -136,7 +138,7 @@ body {
 
     font-size: 18px;
 
-    margin-top: 2px;
+    margin-top: 3px;
 }
 
 
@@ -146,7 +148,7 @@ body {
 
     opacity: .8;
 
-    margin-top: 2px;
+    margin-top: 3px;
 }
 
 
@@ -213,15 +215,14 @@ body {
 
     border-radius: 50%;
 
-    border: 3px solid
+    border:
+        3px solid
         rgba(255,255,255,.5);
 
     background:
         rgba(50,50,50,.35);
 
     pointer-events: auto;
-
-    touch-action: none;
 }
 
 
@@ -273,11 +274,6 @@ body {
     font-weight: bold;
 
     pointer-events: auto;
-
-    touch-action: none;
-
-    -webkit-tap-highlight-color:
-        transparent;
 }
 
 
@@ -353,7 +349,7 @@ body {
 
 
 /* =========================
-   ТЕЛЕФОН
+   МОБИЛЬНЫЙ
 ========================= */
 
 @media (max-width: 600px) {
@@ -384,12 +380,5 @@ body {
 
         right: 12px;
         top: 12px;
-
-        width: 110px;
-    }
-
-    #styleRank {
-
-        font-size: 42px;
     }
 }
