@@ -59,7 +59,8 @@ body {
     left: 50%;
     top: 50%;
 
-    transform: translate(-50%, -50%);
+    transform:
+        translate(-50%, -50%);
 
     color: white;
 
@@ -80,6 +81,76 @@ body {
 
 
 /* =========================
+   STYLE
+========================= */
+
+#styleBox {
+
+    position: fixed;
+
+    right: 18px;
+    top: 18px;
+
+    width: 125px;
+
+    text-align: right;
+
+    color: white;
+
+    font-family:
+        Arial,
+        sans-serif;
+
+    font-weight: bold;
+
+    z-index: 25;
+
+    pointer-events: none;
+
+    text-shadow:
+        2px 2px 4px black;
+}
+
+
+#styleTitle {
+
+    font-size: 15px;
+
+    letter-spacing: 3px;
+
+    opacity: .8;
+}
+
+
+#styleRank {
+
+    font-size: 48px;
+
+    line-height: 45px;
+
+    margin-top: 2px;
+}
+
+
+#styleMultiplier {
+
+    font-size: 18px;
+
+    margin-top: 2px;
+}
+
+
+#stylePoints {
+
+    font-size: 14px;
+
+    opacity: .8;
+
+    margin-top: 2px;
+}
+
+
+/* =========================
    ОРУЖИЕ
 ========================= */
 
@@ -90,7 +161,8 @@ body {
     left: 50%;
     bottom: 12px;
 
-    transform: translateX(-50%);
+    transform:
+        translateX(-50%);
 
     color: white;
 
@@ -174,7 +246,7 @@ body {
 
 
 /* =========================
-   КНОПКА ОГНЯ
+   ОГОНЬ
 ========================= */
 
 #shootButton {
@@ -219,7 +291,7 @@ body {
 
 
 /* =========================
-   КНОПКА E
+   E
 ========================= */
 
 #interactButton {
@@ -246,13 +318,11 @@ body {
     font-weight: bold;
 
     pointer-events: auto;
-
-    touch-action: none;
 }
 
 
 /* =========================
-   СМЕНА ОРУЖИЯ
+   ОРУЖИЕ
 ========================= */
 
 #weaponButton {
@@ -279,45 +349,6 @@ body {
     font-weight: bold;
 
     pointer-events: auto;
-
-    touch-action: none;
-}
-
-
-/* =========================
-   СООБЩЕНИЕ
-========================= */
-
-#message {
-
-    position: fixed;
-
-    left: 50%;
-    top: 18%;
-
-    transform:
-        translateX(-50%);
-
-    color: white;
-
-    font-family: Arial, sans-serif;
-
-    font-size: 18px;
-
-    font-weight: bold;
-
-    text-align: center;
-
-    text-shadow:
-        2px 2px 4px black;
-
-    opacity: 0;
-
-    z-index: 30;
-
-    pointer-events: none;
-
-    white-space: nowrap;
 }
 
 
@@ -347,5 +378,18 @@ body {
     #interactButton {
 
         right: 125px;
+    }
+
+    #styleBox {
+
+        right: 12px;
+        top: 12px;
+
+        width: 110px;
+    }
+
+    #styleRank {
+
+        font-size: 42px;
     }
 }
