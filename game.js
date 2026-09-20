@@ -7,65 +7,144 @@
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-function resizeCanvas() {
-    canvas.width = Math.max(320, window.innerWidth);
-    canvas.height = Math.max(240, window.innerHeight);
+let W = 0;
+let H = 0;
+
+function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
 }
 
-window.addEventListener("resize", resizeCanvas);
-resizeCanvas();
-
+window.addEventListener("resize", resize);
+resize();
 
 /* =========================================================
    UI
 ========================================================= */
 
-const moveJoystick = document.getElementById("moveJoystick");
-const moveStick = document.getElementById("moveStick");
-
-const lookJoystick = document.getElementById("lookJoystick");
-const lookStick = document.getElementById("lookStick");
-
-const shootButton = document.getElementById("shootButton");
-const jumpButton = document.getElementById("jumpButton");
-const interactButton = document.getElementById("interactButton");
-const weaponButton = document.getElementById("weaponButton");
-
 const weaponName = document.getElementById("weaponName");
+
+const healthFill = document.getElementById("healthFill");
+const staminaFill = document.getElementById("staminaFill");
+
+const healthText = document.getElementById("healthText");
+const staminaText = document.getElementById("staminaText");
 
 const styleBox = document.getElementById("styleBox");
 const styleRankElement = document.getElementById("styleRank");
 const styleMultiplierElement = document.getElementById("styleMultiplier");
 const stylePointsElement = document.getElementById("stylePoints");
 
+const upgradeMenu = document.getElementById("upgradeMenu");
 
 /* =========================================================
-   TEXTURES
+   PLAYER
 ========================================================= */
 
-const leftFist = new Image();
-const rightFist = new Image();
+const player = {
 
-let leftFistReady = false;
-let rightFistReady = false;
+    x: 4,
+    y: 4,
 
-leftFist.onload = () => {
-    leftFistReady = true;
+    z: 0,
+
+    yaw: 0,
+
+    pitch: 0,
+
+    velocityX: 0,
+    velocityY: 0,
+
+    verticalVelocity: 0,
+
+    grounded: true,
+
+    standingHeight: 0,
+
+    jumpPower: 5.7,
+
+    gravity: 15,
+
+    maxSpeed: 4.8,
+
+    acceleration: 15,
+
+    friction: 8,
+
+    hp: 100,
+    maxHp: 100,
+
+    stamina: 100,
+    maxStamina: 100,
+
+    dashCost: 30,
+
+    dashPower: 9,
+
+    dashCooldown: 0,
+
+    jumpCount: 0,
+    maxJumps: 1,
+
+    invulnerable: 0
 };
-
-rightFist.onload = () => {
-    rightFistReady = true;
-};
-
-leftFist.src = "textures/left_fist.png";
-rightFist.src = "textures/right_fist.png";
-
 
 /* =========================================================
-   MAP
+   UPGRADES
+========================================================= */
+
+const upgrades = {
+    doubleJump: false,
+    dash: false,
+    stamina: false,
+    health: false
+};
+
+document.querySelectorAll(".upgrade").forEach(button => {
+
+    button.addEventListener("click", () => {
+
+        const upgrade = button.dataset.upgrade;
+
+        if (upgrade === "doubleJump") {
+
+            upgrades.doubleJump = true;
+
+            player.maxJumps = 2;
+        }
+
+        if (upgrade === "dash") {
+            upgrades.dash = true;
+        }
+
+        if (upgrade === "stamina") {
+
+            upgrades.stamina = true;
+
+            player.maxStamina = 150;
+            player.stamina = 150;
+        }
+
+        if (upgrade === "health") {
+
+            upgrades.health = true;
+
+            player.maxHp = 150;
+            player.hp = 150;
+        }
+
+        upgradeMenu.style.display = "none";
+
+        updateUI();
+    });
+});
+
+/* =========================================================
+   WORLD
 ========================================================= */
 
 const map = [
+
     "############",
     "#..........#",
     "#..........#",
@@ -83,115 +162,32 @@ const map = [
 const MAP_W = map[0].length;
 const MAP_H = map.length;
 
-
 /* =========================================================
-   PLAYER
+   PLATFORM
 ========================================================= */
-
-const player = {
-
-    x: 6,
-    y: 8,
-
-    angle: 0,
-
-    pitch: 0,
-
-    /* Высота ног над землёй */
-    z: 0,
-
-    /* Вертикальная скорость */
-    verticalVelocity: 0,
-
-    /* Скорость движения */
-    currentSpeed: 0,
-
-    maxSpeed: 4.8,
-
-    acceleration: 10,
-
-    friction: 8,
-
-    radius: 0.18,
-
-    /* Прыжок */
-    jumpPower: 5.6,
-
-    gravity: 15,
-
-    grounded: true,
-
-    /* На какой высоте сейчас стоим */
-    standingHeight: 0
-};
-
-
-/* =========================================================
-   ПЛАТФОРМА
-========================================================= */
-
-/*
-   x/y — положение
-   width/height — размер
-   z — высота верхней поверхности
-*/
 
 const platform = {
 
-    x: 7.1,
-    y: 5.3,
+    x: 7.2,
+    y: 5.4,
 
-    width: 2.2,
-    height: 1.5,
+    width: 2.4,
+    depth: 2.0,
 
     z: 1.35,
 
-    thickness: 0.35
+    thickness: .35
 };
-
-
-/*
-   Проверяет, находится ли игрок
-   над платформой по X/Y.
-*/
 
 function isOverPlatform(x, y) {
 
     return (
-        x >= platform.x &&
-        x <= platform.x + platform.width &&
-        y >= platform.y &&
-        y <= platform.y + platform.height
+        x > platform.x - platform.width / 2 &&
+        x < platform.x + platform.width / 2 &&
+        y > platform.y - platform.depth / 2 &&
+        y < platform.y + platform.depth / 2
     );
 }
-
-
-/* =========================================================
-   CAMERA
-========================================================= */
-
-const MAX_PITCH = 0.75;
-
-
-/*
-   Настройки правого джойстика.
-
-   Чем меньше LOOK_SPEED —
-   тем удобнее и медленнее поворот.
-*/
-
-const LOOK_SPEED_X = 2.0;
-const LOOK_SPEED_Y = 1.25;
-
-
-/* =========================================================
-   RENDER
-========================================================= */
-
-const FOV = Math.PI / 3;
-const MAX_DEPTH = 20;
-const RAYS = 240;
-
 
 /* =========================================================
    ENEMIES
@@ -200,126 +196,320 @@ const RAYS = 240;
 let enemies = [
 
     {
-        x: 6,
-        y: 3,
+        x: 8.5,
+        y: 3.2,
         hp: 100,
-        alive: true,
-        hit: 0
-    }
+        maxHp: 100,
+        alive: true
+    },
 
+    {
+        x: 5.5,
+        y: 7.8,
+        hp: 100,
+        maxHp: 100,
+        alive: true
+    }
 ];
 
-
 /* =========================================================
-   LEVER
+   WEAPONS
 ========================================================= */
 
-const lever = {
-    x: 9,
-    y: 2
-};
+const weapons = [
 
+    {
+        name: "КУЛАКИ",
+        damage: 10,
+        range: 2.1,
+        cooldown: .38,
+        type: "melee"
+    },
 
-/* =========================================================
-   WEAPON
-========================================================= */
+    {
+        name: "ПИСТОЛЕТ",
+        damage: 20,
+        range: 12,
+        cooldown: .35,
+        type: "gun"
+    },
 
-let weapon = "fists";
+    {
+        name: "ДРОБОВИК",
+        damage: 45,
+        range: 8,
+        cooldown: .75,
+        type: "shotgun"
+    },
+
+    {
+        name: "ТОПОР",
+        damage: 35,
+        range: 2.6,
+        cooldown: .65,
+        type: "axe"
+    }
+];
+
+let weaponIndex = 0;
+
+let currentWeapon = weapons[weaponIndex];
+
+let attackCooldown = 0;
 
 let weaponAnimation = 0;
 
-let muzzleFlash = 0;
+function switchWeapon() {
 
+    weaponIndex++;
+
+    if (weaponIndex >= weapons.length) {
+        weaponIndex = 0;
+    }
+
+    currentWeapon = weapons[weaponIndex];
+
+    weaponName.textContent = currentWeapon.name;
+}
 
 /* =========================================================
-   STYLE
+   STYLE SYSTEM
 ========================================================= */
 
 let styleScore = 0;
-let styleCombo = 0;
 let styleMultiplier = 1;
-let lastStyleAction = "";
-let styleVisible = false;
+
 let styleTimer = 0;
 
-const STYLE_TIMEOUT = 10000;
+function addStyle(points) {
 
+    styleScore += Math.floor(points * styleMultiplier);
 
-function getStyleRank() {
+    styleMultiplier = Math.min(
+        5,
+        styleMultiplier + .25
+    );
 
-    if (styleScore >= 1800) return "SSS";
-    if (styleScore >= 1200) return "SS";
-    if (styleScore >= 750) return "S";
-    if (styleScore >= 450) return "A";
-    if (styleScore >= 250) return "B";
-    if (styleScore >= 100) return "C";
-
-    return "D";
-}
-
-
-function addStyle(amount, action) {
-
-    if (action !== lastStyleAction) {
-        styleCombo++;
-    } else {
-        amount *= 0.5;
-    }
-
-    styleMultiplier =
-        Math.min(
-            8,
-            1 + Math.floor(styleCombo / 2)
-        );
-
-    const gained =
-        Math.max(
-            1,
-            Math.round(amount * styleMultiplier)
-        );
-
-    styleScore += gained;
-
-    lastStyleAction = action;
-
-    styleTimer = STYLE_TIMEOUT;
-
-    styleVisible = true;
+    styleTimer = 10;
 
     styleBox.style.display = "block";
 
     updateStyleUI();
 }
 
-
 function updateStyleUI() {
 
-    styleRankElement.textContent =
-        getStyleRank();
+    let rank = "D";
+
+    if (styleScore >= 1000) rank = "C";
+    if (styleScore >= 2500) rank = "B";
+    if (styleScore >= 5000) rank = "A";
+    if (styleScore >= 10000) rank = "S";
+
+    styleRankElement.textContent = rank;
 
     styleMultiplierElement.textContent =
-        "×" + styleMultiplier;
+        "×" + styleMultiplier.toFixed(1);
 
     stylePointsElement.textContent =
-        Math.floor(styleScore);
+        styleScore;
 }
 
+/* =========================================================
+   MOVEMENT JOYSTICK
+========================================================= */
 
-function hideStyle() {
+const moveJoystick = document.getElementById("moveJoystick");
+const moveStick = document.getElementById("moveStick");
 
-    styleVisible = false;
+let movePointer = null;
 
-    styleScore = 0;
-    styleCombo = 0;
-    styleMultiplier = 1;
+let moveX = 0;
+let moveY = 0;
 
-    lastStyleAction = "";
+function updateMoveJoystick(clientX, clientY) {
 
-    styleTimer = 0;
+    const rect = moveJoystick.getBoundingClientRect();
 
-    styleBox.style.display = "none";
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    let dx = clientX - centerX;
+    let dy = clientY - centerY;
+
+    const radius = rect.width * .38;
+
+    const distance = Math.hypot(dx, dy);
+
+    if (distance > radius) {
+
+        dx /= distance;
+        dy /= distance;
+
+        dx *= radius;
+        dy *= radius;
+    }
+
+    moveX = dx / radius;
+    moveY = dy / radius;
+
+    moveStick.style.transform =
+        `translate(${dx}px, ${dy}px)`;
 }
 
+function resetMoveJoystick() {
+
+    moveX = 0;
+    moveY = 0;
+
+    moveStick.style.transform =
+        "translate(0px, 0px)";
+}
+
+moveJoystick.addEventListener("pointerdown", e => {
+
+    movePointer = e.pointerId;
+
+    moveJoystick.setPointerCapture(e.pointerId);
+
+    updateMoveJoystick(
+        e.clientX,
+        e.clientY
+    );
+});
+
+moveJoystick.addEventListener("pointermove", e => {
+
+    if (e.pointerId !== movePointer) return;
+
+    updateMoveJoystick(
+        e.clientX,
+        e.clientY
+    );
+});
+
+moveJoystick.addEventListener("pointerup", e => {
+
+    if (e.pointerId === movePointer) {
+
+        movePointer = null;
+
+        resetMoveJoystick();
+    }
+});
+
+moveJoystick.addEventListener("pointercancel", () => {
+
+    movePointer = null;
+
+    resetMoveJoystick();
+});
+
+/* =========================================================
+   CAMERA JOYSTICK
+========================================================= */
+
+const lookJoystick = document.getElementById("lookJoystick");
+const lookStick = document.getElementById("lookStick");
+
+let lookPointer = null;
+
+let lookX = 0;
+let lookY = 0;
+
+const LOOK_DEADZONE = .12;
+
+const LOOK_SPEED_X = 1.55;
+const LOOK_SPEED_Y = .9;
+
+function updateLookJoystick(clientX, clientY) {
+
+    const rect = lookJoystick.getBoundingClientRect();
+
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    let dx = clientX - centerX;
+    let dy = clientY - centerY;
+
+    const radius = rect.width * .38;
+
+    const distance = Math.hypot(dx, dy);
+
+    if (distance > radius) {
+
+        dx /= distance;
+        dy /= distance;
+
+        dx *= radius;
+        dy *= radius;
+    }
+
+    let nx = dx / radius;
+    let ny = dy / radius;
+
+    if (Math.abs(nx) < LOOK_DEADZONE) nx = 0;
+    if (Math.abs(ny) < LOOK_DEADZONE) ny = 0;
+
+    lookX =
+        Math.sign(nx) *
+        Math.pow(Math.abs(nx), 1.25);
+
+    lookY =
+        Math.sign(ny) *
+        Math.pow(Math.abs(ny), 1.25);
+
+    lookStick.style.transform =
+        `translate(${dx}px, ${dy}px)`;
+}
+
+function resetLookJoystick() {
+
+    lookX = 0;
+    lookY = 0;
+
+    lookStick.style.transform =
+        "translate(0px, 0px)";
+}
+
+lookJoystick.addEventListener("pointerdown", e => {
+
+    lookPointer = e.pointerId;
+
+    lookJoystick.setPointerCapture(e.pointerId);
+
+    updateLookJoystick(
+        e.clientX,
+        e.clientY
+    );
+});
+
+lookJoystick.addEventListener("pointermove", e => {
+
+    if (e.pointerId !== lookPointer) return;
+
+    updateLookJoystick(
+        e.clientX,
+        e.clientY
+    );
+});
+
+lookJoystick.addEventListener("pointerup", e => {
+
+    if (e.pointerId === lookPointer) {
+
+        lookPointer = null;
+
+        resetLookJoystick();
+    }
+});
+
+lookJoystick.addEventListener("pointercancel", () => {
+
+    lookPointer = null;
+
+    resetLookJoystick();
+});
 
 /* =========================================================
    KEYBOARD
@@ -327,224 +517,224 @@ function hideStyle() {
 
 const keys = {};
 
-window.addEventListener("keydown", function(e) {
+window.addEventListener("keydown", e => {
 
-    keys[e.code] = true;
+    keys[e.key.toLowerCase()] = true;
 
-    if (e.code === "Space") {
-        e.preventDefault();
-        shoot();
+    if (e.key === " ") {
+        jump();
     }
 
-    if (e.code === "KeyE") {
+    if (e.key.toLowerCase() === "e") {
         interact();
     }
 
-    if (e.code === "KeyQ") {
+    if (e.key.toLowerCase() === "f") {
+        attack();
+    }
+
+    if (e.key.toLowerCase() === "q") {
         switchWeapon();
     }
 
-    if (e.code === "KeyC") {
-        jump();
+    if (e.key === "Shift") {
+        dash();
     }
 });
 
+window.addEventListener("keyup", e => {
 
-window.addEventListener("keyup", function(e) {
-    keys[e.code] = false;
+    keys[e.key.toLowerCase()] = false;
 });
-
 
 /* =========================================================
-   WEAPON
+   COLLISION
 ========================================================= */
 
-weaponButton.addEventListener(
-    "pointerdown",
-    function(e) {
+function isWall(x, y) {
 
-        e.preventDefault();
+    const r = .22;
 
-        switchWeapon();
+    const checks = [
+
+        [x - r, y - r],
+        [x + r, y - r],
+        [x - r, y + r],
+        [x + r, y + r]
+    ];
+
+    for (const [cx, cy] of checks) {
+
+        const mx = Math.floor(cx);
+        const my = Math.floor(cy);
+
+        if (
+            my < 0 ||
+            my >= MAP_H ||
+            mx < 0 ||
+            mx >= MAP_W
+        ) {
+            return true;
+        }
+
+        if (map[my][mx] === "#") {
+            return true;
+        }
     }
-);
 
+    return false;
+}
 
-function switchWeapon() {
+function movePlayer(dx, dy) {
 
-    if (weapon === "fists") {
+    const nx = player.x + dx;
 
-        weapon = "pistol";
+    if (!isWall(nx, player.y)) {
+        player.x = nx;
+    }
 
-        weaponName.textContent =
-            "ПИСТОЛЕТ";
+    const ny = player.y + dy;
 
-    } else if (weapon === "pistol") {
-
-        weapon = "shotgun";
-
-        weaponName.textContent =
-            "ДРОБОВИК";
-
-    } else {
-
-        weapon = "fists";
-
-        weaponName.textContent =
-            "КУЛАКИ";
+    if (!isWall(player.x, ny)) {
+        player.y = ny;
     }
 }
 
-
 /* =========================================================
-   SHOOT
+   JUMP
 ========================================================= */
 
-shootButton.addEventListener(
-    "pointerdown",
-    function(e) {
+function jump() {
 
-        e.preventDefault();
+    if (upgradeMenu.style.display !== "none") return;
 
-        shoot();
-    }
-);
+    if (player.grounded) {
 
+        player.verticalVelocity =
+            player.jumpPower;
 
-function shoot() {
+        player.grounded = false;
 
-    if (weaponAnimation > 0) {
+        player.jumpCount = 1;
+
         return;
     }
 
-    if (weapon === "fists") {
+    if (
+        upgrades.doubleJump &&
+        player.jumpCount < player.maxJumps
+    ) {
 
-        weaponAnimation = 280;
+        player.verticalVelocity =
+            player.jumpPower * .92;
 
-        punch();
+        player.jumpCount++;
 
-    } else if (weapon === "pistol") {
-
-        weaponAnimation = 220;
-
-        muzzleFlash = 80;
-
-        pistol();
-
-    } else {
-
-        weaponAnimation = 300;
-
-        shotgun();
+        addStyle(50);
     }
 }
 
-
 /* =========================================================
-   PUNCH
+   DASH
 ========================================================= */
 
-function punch() {
+function dash() {
 
-    const target = getTargetEnemy(2);
+    if (!upgrades.dash) return;
 
-    if (!target) return;
+    if (player.dashCooldown > 0) return;
 
-    target.hp -= 20;
+    if (player.stamina < player.dashCost) return;
 
-    target.hit = 1;
+    player.stamina -= player.dashCost;
 
-    addStyle(15, "punch");
+    player.dashCooldown = .65;
 
-    if (target.hp <= 0) {
+    const forwardX = Math.cos(player.yaw);
+    const forwardY = Math.sin(player.yaw);
 
-        target.hp = 0;
+    movePlayer(
+        forwardX * .55,
+        forwardY * .55
+    );
 
-        target.alive = false;
-
-        addStyle(50, "kill");
-    }
+    addStyle(75);
 }
 
-
 /* =========================================================
-   PISTOL
+   GRAVITY / PLATFORM
 ========================================================= */
 
-function pistol() {
+function updateJump(dt) {
 
-    const target = getTargetEnemy(12);
+    const previousZ = player.z;
 
-    if (!target) return;
+    player.verticalVelocity -=
+        player.gravity * dt;
 
-    target.hp -= 25;
+    player.z +=
+        player.verticalVelocity * dt;
 
-    target.hit = 1;
+    let targetHeight = 0;
 
-    addStyle(20, "pistol");
+    /*
+       Платформа учитывается только если игрок
+       действительно падал сверху.
+    */
 
-    if (target.hp <= 0) {
+    if (
+        isOverPlatform(player.x, player.y) &&
+        previousZ >= platform.z &&
+        player.z <= platform.z &&
+        player.verticalVelocity <= 0
+    ) {
 
-        target.hp = 0;
-
-        target.alive = false;
-
-        addStyle(50, "kill");
+        targetHeight = platform.z;
     }
-}
 
+    if (player.z <= targetHeight) {
 
-/* =========================================================
-   SHOTGUN
-========================================================= */
+        player.z = targetHeight;
 
-function shotgun() {
+        player.verticalVelocity = 0;
 
-    const spread = [
-        -.08,
-        -.04,
-        0,
-        .04,
-        .08
-    ];
+        if (!player.grounded) {
 
-    for (const offset of spread) {
-
-        const target =
-            getTargetEnemy(8, offset);
-
-        if (!target) continue;
-
-        target.hp -= 20;
-
-        target.hit = 1;
-
-        addStyle(25, "shotgun");
-
-        if (target.hp <= 0) {
-
-            target.hp = 0;
-
-            target.alive = false;
-
-            addStyle(50, "kill");
+            addStyle(25);
         }
+
+        player.grounded = true;
+
+        player.jumpCount = 0;
+    }
+    else {
+
+        player.grounded = false;
     }
 }
 
-
 /* =========================================================
-   TARGET
+   ATTACK
 ========================================================= */
 
-function getTargetEnemy(
-    maxDistance,
-    offset = 0
-) {
+function attack() {
 
-    let result = null;
+    if (upgradeMenu.style.display !== "none") return;
 
-    let closest = Infinity;
+    if (attackCooldown > 0) return;
+
+    attackCooldown =
+        currentWeapon.cooldown;
+
+    weaponAnimation = 1;
+
+    let hitSomething = false;
+
+    const forwardX =
+        Math.cos(player.yaw);
+
+    const forwardY =
+        Math.sin(player.yaw);
 
     for (const enemy of enemies) {
 
@@ -557,1351 +747,425 @@ function getTargetEnemy(
             enemy.y - player.y;
 
         const distance =
-            Math.sqrt(
-                dx * dx +
-                dy * dy
-            );
+            Math.hypot(dx, dy);
 
-        if (distance > maxDistance) {
+        if (distance > currentWeapon.range) {
             continue;
         }
 
-        const angle =
+        const direction =
             Math.atan2(dy, dx);
 
-        const difference =
-            normalizeAngle(
-                angle -
-                player.angle -
-                offset
+        let angleDifference =
+            direction - player.yaw;
+
+        while (angleDifference > Math.PI)
+            angleDifference -= Math.PI * 2;
+
+        while (angleDifference < -Math.PI)
+            angleDifference += Math.PI * 2;
+
+        let hitAngle = .22;
+
+        if (currentWeapon.type === "shotgun") {
+            hitAngle = .42;
+        }
+
+        if (
+            Math.abs(angleDifference) <= hitAngle
+        ) {
+
+            enemy.hp -=
+                currentWeapon.damage;
+
+            hitSomething = true;
+
+            addStyle(
+                currentWeapon.type === "axe"
+                    ? 120
+                    : 70
             );
 
-        if (Math.abs(difference) < .13) {
+            if (enemy.hp <= 0) {
 
-            if (distance < closest) {
+                enemy.hp = 0;
 
-                closest = distance;
+                enemy.alive = false;
 
-                result = enemy;
+                addStyle(250);
             }
+
+            break;
         }
     }
 
-    return result;
-}
+    if (!hitSomething) {
 
+        if (
+            currentWeapon.type === "axe" ||
+            currentWeapon.type === "melee"
+        ) {
 
-/* =========================================================
-   JUMP
-========================================================= */
-
-jumpButton.addEventListener(
-    "pointerdown",
-    function(e) {
-
-        e.preventDefault();
-
-        jump();
+            weaponAnimation = 1;
+        }
     }
-);
-
-
-function jump() {
-
-    /*
-       Прыжок только с поверхности.
-    */
-
-    if (!player.grounded) {
-        return;
-    }
-
-    player.verticalVelocity =
-        player.jumpPower;
-
-    player.grounded = false;
-
-    addStyle(5, "jump");
 }
-
 
 /* =========================================================
    INTERACT
 ========================================================= */
 
-interactButton.addEventListener(
-    "pointerdown",
-    function(e) {
-
-        e.preventDefault();
-
-        interact();
-    }
-);
-
-
 function interact() {
 
-    const dx =
-        lever.x - player.x;
-
-    const dy =
-        lever.y - player.y;
-
-    const distance =
-        Math.sqrt(
-            dx * dx +
-            dy * dy
+    const leverDistance =
+        Math.hypot(
+            player.x - 6,
+            player.y - 1.3
         );
 
-    if (distance > 1.5) {
-        return;
+    if (leverDistance < 1.5) {
+
+        enemies.push({
+
+            x: 8.2 + Math.random() * 1.5,
+
+            y: 7 + Math.random() * 1.5,
+
+            hp: 100,
+
+            maxHp: 100,
+
+            alive: true
+        });
+
+        addStyle(100);
     }
-
-    spawnEnemy();
 }
-
 
 /* =========================================================
-   SPAWN ENEMY
+   TAKE DAMAGE
 ========================================================= */
 
-function spawnEnemy() {
+function damagePlayer(amount) {
 
-    const points = [
+    if (player.invulnerable > 0) return;
 
-        { x: 3, y: 3 },
-        { x: 8, y: 3 },
-        { x: 3, y: 8 },
-        { x: 8, y: 8 },
-        { x: 6, y: 5 }
+    player.hp -= amount;
 
-    ];
+    player.invulnerable = .4;
 
-    for (const point of points) {
+    if (player.hp <= 0) {
 
-        let occupied = false;
+        player.hp = 0;
 
-        for (const enemy of enemies) {
-
-            if (!enemy.alive) continue;
-
-            const dx =
-                enemy.x - point.x;
-
-            const dy =
-                enemy.y - point.y;
-
-            if (
-                Math.sqrt(
-                    dx * dx +
-                    dy * dy
-                ) < .8
-            ) {
-
-                occupied = true;
-
-                break;
-            }
-        }
-
-        if (!occupied) {
-
-            enemies.push({
-
-                x: point.x,
-                y: point.y,
-
-                hp: 100,
-
-                alive: true,
-
-                hit: 0
-            });
-
-            addStyle(10, "lever");
-
-            return;
-        }
+        setTimeout(resetPlayer, 500);
     }
+
+    updateUI();
 }
 
+function resetPlayer() {
+
+    player.x = 4;
+    player.y = 4;
+
+    player.z = 0;
+
+    player.verticalVelocity = 0;
+
+    player.grounded = true;
+
+    player.hp = player.maxHp;
+
+    player.stamina = player.maxStamina;
+}
 
 /* =========================================================
-   LEFT JOYSTICK
+   ENEMY TEST DAMAGE
 ========================================================= */
 
-let moveJoyActive = false;
+let enemyAttackTimer = 0;
 
-let moveJoyX = 0;
-let moveJoyY = 0;
+function updateEnemies(dt) {
 
+    enemyAttackTimer -= dt;
 
-moveJoystick.addEventListener(
-    "pointerdown",
-    function(e) {
+    for (const enemy of enemies) {
 
-        e.preventDefault();
+        if (!enemy.alive) continue;
 
-        moveJoyActive = true;
+        const dx =
+            player.x - enemy.x;
 
-        moveJoystick.setPointerCapture(
-            e.pointerId
-        );
+        const dy =
+            player.y - enemy.y;
 
-        updateMoveJoystick(e);
-    }
-);
-
-
-moveJoystick.addEventListener(
-    "pointermove",
-    function(e) {
-
-        if (!moveJoyActive) return;
-
-        updateMoveJoystick(e);
-    }
-);
-
-
-moveJoystick.addEventListener(
-    "pointerup",
-    resetMoveJoystick
-);
-
-
-moveJoystick.addEventListener(
-    "pointercancel",
-    resetMoveJoystick
-);
-
-
-function resetMoveJoystick() {
-
-    moveJoyActive = false;
-
-    moveJoyX = 0;
-    moveJoyY = 0;
-
-    moveStick.style.left = "50%";
-    moveStick.style.top = "50%";
-}
-
-
-function updateMoveJoystick(e) {
-
-    const rect =
-        moveJoystick.getBoundingClientRect();
-
-    const centerX =
-        rect.left + rect.width / 2;
-
-    const centerY =
-        rect.top + rect.height / 2;
-
-    let x =
-        e.clientX - centerX;
-
-    let y =
-        e.clientY - centerY;
-
-    const max =
-        rect.width / 2 - 26;
-
-    const length =
-        Math.sqrt(
-            x * x +
-            y * y
-        );
-
-    if (length > max) {
-
-        x =
-            x / length * max;
-
-        y =
-            y / length * max;
-    }
-
-    moveJoyX = x / max;
-    moveJoyY = y / max;
-
-    moveStick.style.left =
-        "calc(50% + " + x + "px)";
-
-    moveStick.style.top =
-        "calc(50% + " + y + "px)";
-}
-
-
-/* =========================================================
-   RIGHT JOYSTICK
-========================================================= */
-
-let lookJoyActive = false;
-
-let lookJoyX = 0;
-let lookJoyY = 0;
-
-
-/*
-   Центр мёртвой зоны.
-
-   Маленькие движения возле центра
-   больше не будут дёргать камеру.
-*/
-
-const LOOK_DEADZONE = 0.12;
-
-
-lookJoystick.addEventListener(
-    "pointerdown",
-    function(e) {
-
-        e.preventDefault();
-
-        lookJoyActive = true;
-
-        lookJoystick.setPointerCapture(
-            e.pointerId
-        );
-
-        updateLookJoystick(e);
-    }
-);
-
-
-lookJoystick.addEventListener(
-    "pointermove",
-    function(e) {
-
-        if (!lookJoyActive) return;
-
-        updateLookJoystick(e);
-    }
-);
-
-
-lookJoystick.addEventListener(
-    "pointerup",
-    resetLookJoystick
-);
-
-
-lookJoystick.addEventListener(
-    "pointercancel",
-    resetLookJoystick
-);
-
-
-function resetLookJoystick() {
-
-    lookJoyActive = false;
-
-    lookJoyX = 0;
-    lookJoyY = 0;
-
-    lookStick.style.left = "50%";
-    lookStick.style.top = "50%";
-}
-
-
-function updateLookJoystick(e) {
-
-    const rect =
-        lookJoystick.getBoundingClientRect();
-
-    const centerX =
-        rect.left + rect.width / 2;
-
-    const centerY =
-        rect.top + rect.height / 2;
-
-    let x =
-        e.clientX - centerX;
-
-    let y =
-        e.clientY - centerY;
-
-    const max =
-        rect.width / 2 - 26;
-
-    const length =
-        Math.sqrt(
-            x * x +
-            y * y
-        );
-
-    if (length > max) {
-
-        x =
-            x / length * max;
-
-        y =
-            y / length * max;
-    }
-
-    let normalizedX =
-        x / max;
-
-    let normalizedY =
-        y / max;
-
-
-    /*
-       Мёртвая зона.
-    */
-
-    if (
-        Math.abs(normalizedX) <
-        LOOK_DEADZONE
-    ) {
-
-        normalizedX = 0;
-    }
-
-    if (
-        Math.abs(normalizedY) <
-        LOOK_DEADZONE
-    ) {
-
-        normalizedY = 0;
-    }
-
-
-    /*
-       Более плавная чувствительность.
-       Возле центра очень медленно,
-       дальше быстрее.
-    */
-
-    lookJoyX =
-        Math.sign(normalizedX) *
-        Math.pow(
-            Math.abs(normalizedX),
-            1.35
-        );
-
-    lookJoyY =
-        Math.sign(normalizedY) *
-        Math.pow(
-            Math.abs(normalizedY),
-            1.35
-        );
-
-
-    lookStick.style.left =
-        "calc(50% + " + x + "px)";
-
-    lookStick.style.top =
-        "calc(50% + " + y + "px)";
-}
-
-
-/* =========================================================
-   WALL
-========================================================= */
-
-function isWall(x, y) {
-
-    const mapX = Math.floor(x);
-    const mapY = Math.floor(y);
-
-    if (
-        mapX < 0 ||
-        mapY < 0 ||
-        mapX >= MAP_W ||
-        mapY >= MAP_H
-    ) {
-
-        return true;
-    }
-
-    return map[mapY][mapX] === "#";
-}
-
-
-/* =========================================================
-   PLAYER MOVEMENT
-========================================================= */
-
-function movePlayer(delta) {
-
-    let forward =
-        -moveJoyY;
-
-    let strafe =
-        moveJoyX;
-
-
-    if (
-        keys["KeyW"] ||
-        keys["ArrowUp"]
-    ) {
-
-        forward += 1;
-    }
-
-    if (
-        keys["KeyS"] ||
-        keys["ArrowDown"]
-    ) {
-
-        forward -= 1;
-    }
-
-    if (
-        keys["KeyD"] ||
-        keys["ArrowRight"]
-    ) {
-
-        strafe += 1;
-    }
-
-    if (
-        keys["KeyA"] ||
-        keys["ArrowLeft"]
-    ) {
-
-        strafe -= 1;
-    }
-
-
-    const inputLength =
-        Math.sqrt(
-            forward * forward +
-            strafe * strafe
-        );
-
-
-    if (inputLength > .05) {
-
-        forward /= Math.max(inputLength, 1);
-        strafe /= Math.max(inputLength, 1);
-
-
-        /*
-           Плавный разгон.
-        */
-
-        player.currentSpeed +=
-            player.acceleration *
-            delta / 1000;
-
-
-        player.currentSpeed =
-            Math.min(
-                player.currentSpeed,
-                player.maxSpeed
-            );
-
-    } else {
-
-        /*
-           Плавное торможение.
-        */
-
-        player.currentSpeed -=
-            player.friction *
-            delta / 1000;
-
-
-        player.currentSpeed =
-            Math.max(
-                0,
-                player.currentSpeed
-            );
-
-        return;
-    }
-
-
-    const speed =
-        player.currentSpeed *
-        delta / 1000;
-
-
-    const dx =
-        Math.cos(player.angle) *
-        forward *
-        speed -
-
-        Math.sin(player.angle) *
-        strafe *
-        speed;
-
-
-    const dy =
-        Math.sin(player.angle) *
-        forward *
-        speed +
-
-        Math.cos(player.angle) *
-        strafe *
-        speed;
-
-
-    if (
-        !isWall(
-            player.x +
-            dx +
-            Math.sign(dx) *
-            player.radius,
-
-            player.y
-        )
-    ) {
-
-        player.x += dx;
-    }
-
-
-    if (
-        !isWall(
-            player.x,
-
-            player.y +
-            dy +
-            Math.sign(dy) *
-            player.radius
-        )
-    ) {
-
-        player.y += dy;
-    }
-}
-
-
-/* =========================================================
-   CAMERA
-========================================================= */
-
-function updateCamera(delta) {
-
-    /*
-       Горизонтальный поворот.
-    */
-
-    player.angle +=
-        lookJoyX *
-        LOOK_SPEED_X *
-        delta / 1000;
-
-
-    /*
-       Вертикальный взгляд.
-    */
-
-    player.pitch +=
-        lookJoyY *
-        LOOK_SPEED_Y *
-        delta / 1000;
-
-
-    player.pitch =
-        Math.max(
-            -MAX_PITCH,
-
-            Math.min(
-                MAX_PITCH,
-                player.pitch
-            )
-        );
-}
-
-
-/* =========================================================
-   JUMP PHYSICS
-========================================================= */
-
-function updateJump(delta) {
-
-    const dt =
-        delta / 1000;
-
-
-    /*
-       Гравитация.
-    */
-
-    player.verticalVelocity -=
-        player.gravity * dt;
-
-
-    /*
-       Изменяем высоту.
-    */
-
-    player.z +=
-        player.verticalVelocity * dt;
-
-
-    /*
-       Определяем поверхность,
-       на которой находится игрок.
-    */
-
-    let targetHeight = 0;
-
-
-    /*
-       Платформа считается поверхностью
-       только если игрок находится над ней.
-    */
-
-    if (
-        isOverPlatform(
-            player.x,
-            player.y
-        )
-    ) {
-
-        /*
-           На платформу можно попасть
-           только сверху.
-        */
+        const distance =
+            Math.hypot(dx, dy);
 
         if (
-            player.z <=
-            platform.z + 0.08 &&
-
-            player.verticalVelocity <= 0
+            distance < 1.4 &&
+            enemyAttackTimer <= 0
         ) {
 
-            targetHeight =
-                platform.z;
+            damagePlayer(8);
+
+            enemyAttackTimer = 1;
         }
-    }
-
-
-    /*
-       Если игрок падает и достиг
-       поверхности — приземляемся.
-    */
-
-    if (
-        player.z <= targetHeight
-    ) {
-
-        player.z =
-            targetHeight;
-
-        player.verticalVelocity =
-            0;
-
-        player.grounded =
-            true;
-
-        player.standingHeight =
-            targetHeight;
-
-    } else {
-
-        player.grounded =
-            false;
     }
 }
 
-
 /* =========================================================
-   RAYCAST
+   RAYCASTING
 ========================================================= */
+
+const FOV = Math.PI / 3;
 
 function castRay(angle) {
 
-    const sin =
-        Math.sin(angle);
-
-    const cos =
-        Math.cos(angle);
+    const rayX = Math.cos(angle);
+    const rayY = Math.sin(angle);
 
     let distance = 0;
 
+    const step = .025;
 
-    while (
-        distance < MAX_DEPTH
-    ) {
+    while (distance < 20) {
 
-        distance += .025;
+        distance += step;
 
         const x =
-            player.x +
-            cos * distance;
+            player.x + rayX * distance;
 
         const y =
-            player.y +
-            sin * distance;
+            player.y + rayY * distance;
 
+        const mx = Math.floor(x);
+        const my = Math.floor(y);
 
         if (
-            isWall(x, y)
+            mx < 0 ||
+            mx >= MAP_W ||
+            my < 0 ||
+            my >= MAP_H
         ) {
+            return distance;
+        }
 
+        if (map[my][mx] === "#") {
             return distance;
         }
     }
 
-
-    return MAX_DEPTH;
+    return 20;
 }
 
-
 /* =========================================================
-   WORLD
+   WORLD DRAWING
 ========================================================= */
 
 function drawWorld() {
 
-    const w =
-        canvas.width;
-
-    const h =
-        canvas.height;
-
-
-    /*
-       Камера выше при прыжке.
-    */
-
-    const jumpCamera =
-        player.z *
-        h *
-        .12;
-
-
     const horizon =
-        h / 2 +
-
-        player.pitch *
-        h *
-        .45 -
-
-        jumpCamera;
-
+        H / 2 +
+        player.pitch * H * .45 -
+        player.z * 18;
 
     /*
-       Небо.
+       Небо
     */
 
-    ctx.fillStyle =
-        "#101010";
+    ctx.fillStyle = "#101010";
 
     ctx.fillRect(
         0,
         0,
-        w,
-        Math.max(horizon, 0)
+        W,
+        horizon
     );
 
-
     /*
-       Пол.
+       Пол
     */
 
-    ctx.fillStyle =
-        "#252525";
+    ctx.fillStyle = "#202020";
 
     ctx.fillRect(
         0,
-        Math.max(horizon, 0),
-        w,
-        h
+        horizon,
+        W,
+        H - horizon
     );
 
+    /*
+       Полосы пола
+    */
 
-    const rays =
-        Math.min(
-            RAYS,
-            Math.floor(w / 2)
-        );
+    ctx.strokeStyle =
+        "rgba(255,255,255,.06)";
 
-
-    const column =
-        w / rays;
-
+    ctx.lineWidth = 1;
 
     for (
-        let i = 0;
-        i < rays;
-        i++
+        let y = horizon + 15;
+        y < H;
+        y += 35
     ) {
 
-        const cameraX =
-            i / rays - .5;
+        ctx.beginPath();
 
+        ctx.moveTo(0, y);
+        ctx.lineTo(W, y);
+
+        ctx.stroke();
+    }
+
+    /*
+       Стены
+    */
+
+    for (let x = 0; x < W; x += 2) {
+
+        const cameraX =
+            x / W - .5;
 
         const rayAngle =
-            player.angle +
+            player.yaw +
             cameraX * FOV;
 
-
-        let distance =
+        const distance =
             castRay(rayAngle);
 
-
-        distance *=
+        const correctedDistance =
+            distance *
             Math.cos(
-                rayAngle -
-                player.angle
+                rayAngle - player.yaw
             );
-
 
         const wallHeight =
-            h /
-            Math.max(
-                distance,
-                .001
-            );
+            H * .95 /
+            Math.max(.1, correctedDistance);
 
-
-        const wallTop =
+        const top =
             horizon -
             wallHeight / 2;
 
+        const bottom =
+            horizon +
+            wallHeight / 2;
 
-        const brightness =
+        const shade =
             Math.max(
                 25,
-                180 -
-                distance * 15
+                170 - correctedDistance * 12
             );
 
-
         ctx.fillStyle =
-            "rgb(" +
-            brightness +
-            "," +
-            brightness +
-            "," +
-            brightness +
-            ")";
-
+            `rgb(${shade},${shade},${shade})`;
 
         ctx.fillRect(
-            i * column,
-            wallTop,
-            column + 1,
-            wallHeight
+            x,
+            top,
+            3,
+            bottom - top
         );
     }
 
-
-    /*
-       Платформа рисуется после пола,
-       поэтому её видно в комнате.
-    */
-
     drawPlatform();
+    drawLever();
+    drawEnemies();
 }
 
-
 /* =========================================================
-   PLATFORM
+   PLATFORM DRAWING
 ========================================================= */
 
 function drawPlatform() {
 
-    const w =
-        canvas.width;
-
-    const h =
-        canvas.height;
-
-
-    const centerX =
-        platform.x +
-        platform.width / 2;
-
-    const centerY =
-        platform.y +
-        platform.height / 2;
-
-
     const dx =
-        centerX -
-        player.x;
+        platform.x - player.x;
 
     const dy =
-        centerY -
-        player.y;
-
+        platform.y - player.y;
 
     const distance =
-        Math.sqrt(
-            dx * dx +
-            dy * dy
-        );
+        Math.hypot(dx, dy);
 
+    if (distance > 15) return;
 
     const angle =
-        Math.atan2(dy, dx);
+        Math.atan2(dy, dx) -
+        player.yaw;
 
+    let a = angle;
 
-    const relative =
-        normalizeAngle(
-            angle -
-            player.angle
-        );
+    while (a > Math.PI)
+        a -= Math.PI * 2;
 
-
-    if (
-        Math.abs(relative) >
-        FOV
-    ) {
-
-        return;
-    }
-
+    while (a < -Math.PI)
+        a += Math.PI * 2;
 
     if (
-        distance < .1
-    ) {
-
-        return;
-    }
-
+        Math.abs(a) > FOV * .8
+    ) return;
 
     const screenX =
-        w / 2 +
-
-        Math.tan(relative) *
-        (w / 2) /
-        Math.tan(FOV / 2);
-
+        W / 2 +
+        (a / FOV) * W;
 
     const scale =
-        Math.min(
-            h /
-            distance *
-            .12,
-            1.2
-        );
+        H / Math.max(.1, distance);
 
+    const width =
+        platform.width * scale;
 
-    const platformWidth =
-        platform.width *
-        h /
-        distance *
-        .55;
+    const depth =
+        platform.depth * scale;
 
-
-    const platformDepth =
-        platform.height *
-        h /
-        distance *
-        .45;
-
-
-    const jumpCamera =
-        player.z *
-        h *
-        .12;
-
+    const height =
+        platform.thickness * scale;
 
     const horizon =
-        h / 2 +
+        H / 2 +
+        player.pitch * H * .45 -
+        player.z * 18;
 
-        player.pitch *
-        h *
-        .45 -
+    const top =
+        horizon -
+        platform.z * scale * .28;
 
-        jumpCamera;
-
-
-    /*
-       Высота платформы
-       визуально поднимает её над полом.
-    */
-
-    const topY =
-        horizon +
-        platform.z *
-        h /
-        distance *
-        .42;
-
-
-    /*
-       Верх.
-    */
-
-    ctx.fillStyle =
-        "#555555";
-
+    ctx.fillStyle = "#777";
 
     ctx.fillRect(
-
-        screenX -
-        platformWidth / 2,
-
-        topY,
-
-        platformWidth,
-
-        platformDepth
+        screenX - width / 2,
+        top,
+        width,
+        height
     );
 
-
-    /*
-       Передняя стенка.
-    */
-
-    ctx.fillStyle =
-        "#303030";
-
-
-    ctx.fillRect(
-
-        screenX -
-        platformWidth / 2,
-
-        topY +
-        platformDepth,
-
-        platformWidth,
-
-        platform.thickness *
-        h /
-        distance *
-        .25
-    );
-
-
-    /*
-       Край.
-    */
-
-    ctx.strokeStyle =
-        "#777777";
-
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = "#aaa";
 
     ctx.strokeRect(
-
-        screenX -
-        platformWidth / 2,
-
-        topY,
-
-        platformWidth,
-
-        platformDepth
+        screenX - width / 2,
+        top,
+        width,
+        height
     );
-}
-
-
-/* =========================================================
-   SPRITES
-========================================================= */
-
-function drawSprites() {
-
-    for (const enemy of enemies) {
-
-        if (enemy.alive) {
-
-            drawEnemy(enemy);
-        }
-    }
-
-    drawLever();
-}
-
-
-/* =========================================================
-   ENEMY
-========================================================= */
-
-function drawEnemy(enemy) {
-
-    const dx =
-        enemy.x -
-        player.x;
-
-    const dy =
-        enemy.y -
-        player.y;
-
-    const distance =
-        Math.sqrt(
-            dx * dx +
-            dy * dy
-        );
-
-    const angle =
-        Math.atan2(
-            dy,
-            dx
-        );
-
-    const relative =
-        normalizeAngle(
-            angle -
-            player.angle
-        );
-
-
-    if (
-        Math.abs(relative) >
-        FOV / 2
-    ) {
-
-        return;
-    }
-
-
-    const wallDistance =
-        castRay(
-            player.angle +
-            relative
-        );
-
-
-    if (
-        distance >
-        wallDistance
-    ) {
-
-        return;
-    }
-
-
-    const w =
-        canvas.width;
-
-    const h =
-        canvas.height;
-
-
-    const jumpCamera =
-        player.z *
-        h *
-        .12;
-
-
-    const horizon =
-        h / 2 +
-
-        player.pitch *
-        h *
-        .45 -
-
-        jumpCamera;
-
-
-    const screenX =
-        w / 2 +
-
-        Math.tan(relative) *
-        (w / 2) /
-        Math.tan(FOV / 2);
-
-
-    const size =
-        h /
-        Math.max(distance, .1);
-
-
-    const scale =
-        Math.min(
-            size * .003,
-            1.5
-        );
-
-
-    const bodyHeight =
-        170 * scale;
-
-
-    const headSize =
-        32 * scale;
-
-
-    const centerY =
-        horizon;
-
-
-    ctx.fillStyle =
-        enemy.hit > 0
-            ? "#ffffff"
-            : "#888888";
-
-
-    ctx.fillRect(
-        screenX -
-        35 * scale,
-
-        centerY,
-
-        70 * scale,
-
-        bodyHeight
-    );
-
-
-    ctx.beginPath();
-
-
-    ctx.arc(
-        screenX,
-
-        centerY -
-        35 * scale,
-
-        headSize,
-
-        0,
-        Math.PI * 2
-    );
-
-
-    ctx.fill();
-
 
     /*
-       HP.
+       Подсветка платформы
     */
 
     ctx.fillStyle =
-        "#111111";
-
-
-    ctx.fillRect(
-        screenX -
-        40 * scale,
-
-        centerY -
-        80 * scale,
-
-        80 * scale,
-
-        7
-    );
-
-
-    ctx.fillStyle =
-        "#d00000";
-
+        "rgba(255,255,255,.12)";
 
     ctx.fillRect(
-        screenX -
-        40 * scale,
-
-        centerY -
-        80 * scale,
-
-        80 *
-        scale *
-        Math.max(
-            enemy.hp / 100,
-            0
-        ),
-
-        7
+        screenX - width / 2,
+        top,
+        width,
+        Math.max(2, depth * .08)
     );
 }
-
 
 /* =========================================================
    LEVER
@@ -1909,368 +1173,264 @@ function drawEnemy(enemy) {
 
 function drawLever() {
 
-    const dx =
-        lever.x -
-        player.x;
-
-    const dy =
-        lever.y -
-        player.y;
+    const dx = 6 - player.x;
+    const dy = 1.3 - player.y;
 
     const distance =
-        Math.sqrt(
-            dx * dx +
-            dy * dy
-        );
+        Math.hypot(dx, dy);
 
+    if (distance > 10) return;
 
-    const angle =
-        Math.atan2(
-            dy,
-            dx
-        );
+    let angle =
+        Math.atan2(dy, dx) -
+        player.yaw;
 
+    while (angle > Math.PI)
+        angle -= Math.PI * 2;
 
-    const relative =
-        normalizeAngle(
-            angle -
-            player.angle
-        );
+    while (angle < -Math.PI)
+        angle += Math.PI * 2;
 
+    if (Math.abs(angle) > FOV) return;
 
-    if (
-        Math.abs(relative) >
-        FOV / 2
-    ) {
+    const screenX =
+        W / 2 +
+        angle / FOV * W;
 
-        return;
-    }
-
-
-    const wallDistance =
-        castRay(
-            player.angle +
-            relative
-        );
-
-
-    if (
-        distance >
-        wallDistance
-    ) {
-
-        return;
-    }
-
-
-    const w =
-        canvas.width;
-
-    const h =
-        canvas.height;
-
-
-    const jumpCamera =
-        player.z *
-        h *
-        .12;
-
+    const size =
+        H / Math.max(.1, distance);
 
     const horizon =
-        h / 2 +
+        H / 2 +
+        player.pitch * H * .45;
 
-        player.pitch *
-        h *
-        .45 -
-
-        jumpCamera;
-
-
-    const x =
-        w / 2 +
-
-        Math.tan(relative) *
-        (w / 2) /
-        Math.tan(FOV / 2);
-
-
-    const scale =
-        Math.min(
-            h /
-            Math.max(distance, .1) *
-            .004,
-
-            1.5
-        );
-
-
-    const y =
-        horizon +
-        50 * scale;
-
-
-    ctx.fillStyle =
-        "#333333";
-
+    ctx.fillStyle = "#555";
 
     ctx.fillRect(
-        x - 18 * scale,
-        y,
-        36 * scale,
-        65 * scale
+        screenX - size * .08,
+        horizon - size * .35,
+        size * .16,
+        size * .35
     );
 
+    ctx.fillStyle = "#aaa";
 
-    ctx.strokeStyle =
-        "#777777";
-
-
-    ctx.lineWidth =
-        Math.max(
-            2,
-            5 * scale
-        );
-
-
-    ctx.beginPath();
-
-
-    ctx.moveTo(
-        x,
-        y + 10 * scale
+    ctx.fillRect(
+        screenX - size * .12,
+        horizon - size * .42,
+        size * .24,
+        size * .08
     );
-
-
-    ctx.lineTo(
-        x + 25 * scale,
-        y - 30 * scale
-    );
-
-
-    ctx.stroke();
 }
 
+/* =========================================================
+   ENEMIES / MANNEQUINS
+========================================================= */
+
+function drawEnemies() {
+
+    for (const enemy of enemies) {
+
+        if (!enemy.alive) continue;
+
+        const dx =
+            enemy.x - player.x;
+
+        const dy =
+            enemy.y - player.y;
+
+        const distance =
+            Math.hypot(dx, dy);
+
+        if (distance < .2 || distance > 15)
+            continue;
+
+        let angle =
+            Math.atan2(dy, dx) -
+            player.yaw;
+
+        while (angle > Math.PI)
+            angle -= Math.PI * 2;
+
+        while (angle < -Math.PI)
+            angle += Math.PI * 2;
+
+        if (Math.abs(angle) > FOV * .9)
+            continue;
+
+        const screenX =
+            W / 2 +
+            angle / FOV * W;
+
+        const size =
+            H / distance;
+
+        const horizon =
+            H / 2 +
+            player.pitch * H * .45 -
+            player.z * 18;
+
+        const enemyHeight =
+            size * .9;
+
+        const bottom =
+            horizon + size * .35;
+
+        /*
+           Манекен
+        */
+
+        ctx.fillStyle = "#aaa";
+
+        ctx.fillRect(
+            screenX - size * .16,
+            bottom - enemyHeight * .55,
+            size * .32,
+            enemyHeight * .55
+        );
+
+        ctx.beginPath();
+
+        ctx.arc(
+            screenX,
+            bottom - enemyHeight * .68,
+            size * .18,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fill();
+
+        /*
+           HP полоска манекена
+        */
+
+        const barWidth =
+            size * .5;
+
+        const hpPercent =
+            enemy.hp / enemy.maxHp;
+
+        ctx.fillStyle = "#111";
+
+        ctx.fillRect(
+            screenX - barWidth / 2,
+            bottom - enemyHeight * .95,
+            barWidth,
+            5
+        );
+
+        ctx.fillStyle = "#ddd";
+
+        ctx.fillRect(
+            screenX - barWidth / 2,
+            bottom - enemyHeight * .95,
+            barWidth * hpPercent,
+            5
+        );
+    }
+}
 
 /* =========================================================
-   WEAPON
+   WEAPON DRAWING
 ========================================================= */
 
 function drawWeapon() {
 
-    const w =
-        canvas.width;
+    const bob =
+        Math.sin(performance.now() * .006) *
+        4;
 
-    const h =
-        canvas.height;
+    const jumpOffset =
+        player.z * 15;
 
+    const punch =
+        weaponAnimation * 45;
 
-    let recoil = 0;
+    const baseX =
+        W / 2;
 
+    const baseY =
+        H - 45 +
+        jumpOffset;
 
-    if (
-        weaponAnimation > 0
-    ) {
+    /*
+       Анимация постепенно возвращается
+    */
 
-        recoil =
-            Math.sin(
-                (
-                    1 -
-                    weaponAnimation /
-                    300
-                ) *
-                Math.PI
-            );
-    }
+    weaponAnimation *= .82;
 
-
-    const cameraY =
-        player.pitch *
-        h *
-        .18;
-
-
-    const jumpY =
-        player.z *
-        h *
-        .06;
-
-
-    if (weapon === "fists") {
+    if (currentWeapon.type === "melee") {
 
         drawFists(
-            w,
-            h,
-            recoil,
-            cameraY,
-            jumpY
+            baseX,
+            baseY + bob,
+            punch
         );
+    }
 
-    } else if (
-        weapon === "pistol"
-    ) {
+    else if (currentWeapon.type === "axe") {
+
+        drawAxe(
+            baseX,
+            baseY + bob,
+            punch
+        );
+    }
+
+    else if (currentWeapon.type === "gun") {
 
         drawPistol(
-            w,
-            h,
-            recoil,
-            cameraY,
-            jumpY
+            baseX,
+            baseY + bob
         );
+    }
 
-    } else {
+    else if (currentWeapon.type === "shotgun") {
 
         drawShotgun(
-            w,
-            h,
-            recoil,
-            cameraY,
-            jumpY
+            baseX,
+            baseY + bob
         );
     }
 }
-
 
 /* =========================================================
    FISTS
 ========================================================= */
 
-function drawFists(
-    w,
-    h,
-    punch,
-    cameraY,
-    jumpY
-) {
-
-    const size =
-        Math.min(w, h) * .34;
-
-
-    const y =
-        h * .68 -
-        cameraY -
-        jumpY -
-        punch * h * .12;
-
-
-    const leftX =
-        w * .04 +
-        punch * w * .09;
-
-
-    const rightX =
-        w * .62 -
-        punch * w * .09;
-
-
-    if (leftFistReady) {
-
-        ctx.save();
-
-        ctx.translate(
-            leftX + size / 2,
-            y + size / 2
-        );
-
-        ctx.rotate(
-            -punch * .12
-        );
-
-        ctx.drawImage(
-            leftFist,
-            -size / 2,
-            -size / 2,
-            size,
-            size
-        );
-
-        ctx.restore();
-
-    } else {
-
-        drawFallbackFist(
-            leftX + size / 2,
-            y + size * .65,
-            size * .35,
-            -.1
-        );
-    }
-
-
-    if (rightFistReady) {
-
-        ctx.save();
-
-        ctx.translate(
-            rightX + size / 2,
-            y + size / 2
-        );
-
-        ctx.rotate(
-            punch * .12
-        );
-
-        ctx.drawImage(
-            rightFist,
-            -size / 2,
-            -size / 2,
-            size,
-            size
-        );
-
-        ctx.restore();
-
-    } else {
-
-        drawFallbackFist(
-            rightX + size / 2,
-            y + size * .65,
-            size * .35,
-            .1
-        );
-    }
-}
-
-
-/* =========================================================
-   FALLBACK FIST
-========================================================= */
-
-function drawFallbackFist(
-    x,
-    y,
-    size,
-    rotation
-) {
+function drawFists(x, y, punch) {
 
     ctx.save();
 
-    ctx.translate(x, y);
+    /*
+       Левая рука
+    */
 
-    ctx.rotate(rotation);
-
-    ctx.fillStyle =
-        "#b97858";
-
-
-    ctx.fillRect(
-        -size / 2,
-        -size / 2,
-        size,
-        size
-    );
-
-
-    ctx.fillStyle =
-        "#d59a73";
-
+    ctx.fillStyle = "#c7c7c7";
 
     ctx.beginPath();
 
     ctx.arc(
+        x - 85 + punch * .2,
+        y - 25 - punch * .3,
+        30,
         0,
-        -size * .25,
-        size * .55,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+    /*
+       Правая рука
+    */
+
+    ctx.beginPath();
+
+    ctx.arc(
+        x + 85 - punch * .2,
+        y - 25 - punch * .3,
+        30,
         0,
         Math.PI * 2
     );
@@ -2280,359 +1440,438 @@ function drawFallbackFist(
     ctx.restore();
 }
 
+/* =========================================================
+   AXE
+========================================================= */
+
+function drawAxe(x, y, punch) {
+
+    ctx.save();
+
+    const swing =
+        punch * .75;
+
+    ctx.translate(
+        x + 30,
+        y - 30
+    );
+
+    ctx.rotate(
+        -0.45 + swing * .012
+    );
+
+    /*
+       Рукоять
+    */
+
+    ctx.fillStyle = "#765333";
+
+    ctx.fillRect(
+        -9,
+        -5,
+        18,
+        125
+    );
+
+    /*
+       Лезвие
+    */
+
+    ctx.fillStyle = "#bbb";
+
+    ctx.beginPath();
+
+    ctx.moveTo(-15, -18);
+    ctx.lineTo(65, -5);
+    ctx.lineTo(58, 25);
+    ctx.lineTo(-15, 12);
+
+    ctx.closePath();
+
+    ctx.fill();
+
+    ctx.strokeStyle = "#eee";
+
+    ctx.stroke();
+
+    ctx.restore();
+}
 
 /* =========================================================
    PISTOL
 ========================================================= */
 
-function drawPistol(
-    w,
-    h,
-    recoil,
-    cameraY,
-    jumpY
-) {
-
-    const cx =
-        w / 2;
-
+function drawPistol(x, y) {
 
     ctx.save();
 
-
-    ctx.translate(
-        0,
-        recoil * 35 -
-        cameraY -
-        jumpY
-    );
-
-
-    ctx.fillStyle =
-        "#c88c68";
-
+    ctx.fillStyle = "#444";
 
     ctx.fillRect(
-        cx - 28,
-        h * .78,
-        56,
-        130
+        x - 17,
+        y - 90,
+        34,
+        95
     );
 
-
-    ctx.fillStyle =
-        "#222222";
-
+    ctx.fillStyle = "#777";
 
     ctx.fillRect(
-        cx - 45,
-        h * .68,
-        90,
-        65
+        x - 13,
+        y - 112,
+        26,
+        30
     );
-
-
-    ctx.fillStyle =
-        "#111111";
-
-
-    ctx.fillRect(
-        cx - 42,
-        h * .64,
-        84,
-        35
-    );
-
-
-    ctx.fillStyle =
-        "#151515";
-
-
-    ctx.fillRect(
-        cx - 12,
-        h * .55,
-        24,
-        100
-    );
-
-
-    if (muzzleFlash > 0) {
-
-        ctx.fillStyle =
-            "#ffd34d";
-
-
-        ctx.beginPath();
-
-        ctx.moveTo(
-            cx,
-            h * .51
-        );
-
-        ctx.lineTo(
-            cx - 25,
-            h * .43
-        );
-
-        ctx.lineTo(
-            cx,
-            h * .46
-        );
-
-        ctx.lineTo(
-            cx + 25,
-            h * .43
-        );
-
-        ctx.closePath();
-
-        ctx.fill();
-    }
-
 
     ctx.restore();
 }
-
 
 /* =========================================================
    SHOTGUN
 ========================================================= */
 
-function drawShotgun(
-    w,
-    h,
-    recoil,
-    cameraY,
-    jumpY
-) {
-
-    const cx =
-        w / 2;
-
+function drawShotgun(x, y) {
 
     ctx.save();
 
-
-    ctx.translate(
-        0,
-        recoil * 45 -
-        cameraY -
-        jumpY
-    );
-
-
-    ctx.fillStyle =
-        "#181818";
-
+    ctx.fillStyle = "#444";
 
     ctx.fillRect(
-        cx - 45,
-        h * .67,
-        90,
-        h * .34
+        x - 24,
+        y - 115,
+        48,
+        115
     );
 
-
-    ctx.fillStyle =
-        "#292929";
-
+    ctx.fillStyle = "#888";
 
     ctx.fillRect(
-        cx - 28,
-        h * .58,
-        56,
-        h * .38
+        x - 17,
+        y - 145,
+        34,
+        45
     );
-
-
-    ctx.fillStyle =
-        "#080808";
-
-
-    ctx.beginPath();
-
-    ctx.arc(
-        cx,
-        h * .58,
-        28,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.fill();
-
-
-    ctx.fillStyle =
-        "#000000";
-
-
-    ctx.beginPath();
-
-    ctx.arc(
-        cx - 11,
-        h * .58,
-        8,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.fill();
-
-
-    ctx.beginPath();
-
-    ctx.arc(
-        cx + 11,
-        h * .58,
-        8,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.fill();
-
-
-    ctx.fillStyle =
-        "#75482d";
-
-
-    ctx.fillRect(
-        cx - 70,
-        h * .82,
-        140,
-        35
-    );
-
 
     ctx.restore();
 }
 
-
 /* =========================================================
-   ANGLE
+   INPUT BUTTONS
 ========================================================= */
 
-function normalizeAngle(angle) {
+document
+    .getElementById("jumpButton")
+    .addEventListener("pointerdown", jump);
 
-    while (angle > Math.PI) {
+document
+    .getElementById("dashButton")
+    .addEventListener("pointerdown", dash);
 
-        angle -=
-            Math.PI * 2;
-    }
+document
+    .getElementById("shootButton")
+    .addEventListener("pointerdown", attack);
 
+document
+    .getElementById("interactButton")
+    .addEventListener("pointerdown", interact);
 
-    while (angle < -Math.PI) {
-
-        angle +=
-            Math.PI * 2;
-    }
-
-
-    return angle;
-}
-
+document
+    .getElementById("weaponButton")
+    .addEventListener("pointerdown", switchWeapon);
 
 /* =========================================================
    UPDATE
 ========================================================= */
 
-let lastTime =
-    performance.now();
+function update(dt) {
 
-
-function update(delta) {
-
-    movePlayer(delta);
-
-    updateCamera(delta);
-
-    updateJump(delta);
-
-
-    if (weaponAnimation > 0) {
-
-        weaponAnimation -= delta;
-
-        if (weaponAnimation < 0) {
-            weaponAnimation = 0;
-        }
+    if (
+        upgradeMenu.style.display !== "none"
+    ) {
+        return;
     }
 
+    /*
+       Таймеры
+    */
 
-    if (muzzleFlash > 0) {
+    attackCooldown =
+        Math.max(
+            0,
+            attackCooldown - dt
+        );
 
-        muzzleFlash -= delta;
+    player.dashCooldown =
+        Math.max(
+            0,
+            player.dashCooldown - dt
+        );
 
-        if (muzzleFlash < 0) {
-            muzzleFlash = 0;
-        }
+    player.invulnerable =
+        Math.max(
+            0,
+            player.invulnerable - dt
+        );
+
+    /*
+       Камера
+    */
+
+    player.yaw +=
+        lookX * LOOK_SPEED_X * dt;
+
+    player.pitch -=
+        lookY * LOOK_SPEED_Y * dt;
+
+    const MAX_PITCH = .9;
+
+    player.pitch =
+        Math.max(
+            -MAX_PITCH,
+            Math.min(
+                MAX_PITCH,
+                player.pitch
+            )
+        );
+
+    /*
+       Движение
+    */
+
+    let inputX = moveX;
+    let inputY = -moveY;
+
+    /*
+       Клавиатура
+    */
+
+    if (keys["w"]) inputY += 1;
+    if (keys["s"]) inputY -= 1;
+    if (keys["a"]) inputX -= 1;
+    if (keys["d"]) inputX += 1;
+
+    const inputLength =
+        Math.hypot(
+            inputX,
+            inputY
+        );
+
+    if (inputLength > 1) {
+
+        inputX /= inputLength;
+        inputY /= inputLength;
     }
 
+    /*
+       Направление относительно камеры
+    */
 
-    for (const enemy of enemies) {
+    const forwardX =
+        Math.cos(player.yaw);
 
-        if (enemy.hit > 0) {
+    const forwardY =
+        Math.sin(player.yaw);
 
-            enemy.hit -=
-                delta / 100;
+    const rightX =
+        Math.cos(
+            player.yaw + Math.PI / 2
+        );
 
-            if (enemy.hit < 0) {
-                enemy.hit = 0;
-            }
-        }
+    const rightY =
+        Math.sin(
+            player.yaw + Math.PI / 2
+        );
+
+    const targetX =
+        (
+            forwardX * inputY +
+            rightX * inputX
+        ) * player.maxSpeed;
+
+    const targetY =
+        (
+            forwardY * inputY +
+            rightY * inputX
+        ) * player.maxSpeed;
+
+    /*
+       Плавное ускорение
+    */
+
+    player.velocityX +=
+        (targetX - player.velocityX) *
+        Math.min(1, player.acceleration * dt);
+
+    player.velocityY +=
+        (targetY - player.velocityY) *
+        Math.min(1, player.acceleration * dt);
+
+    /*
+       Если джойстик отпущен —
+       плавно тормозим
+    */
+
+    if (
+        Math.abs(inputX) < .01 &&
+        Math.abs(inputY) < .01
+    ) {
+
+        const friction =
+            Math.max(
+                0,
+                1 - player.friction * dt
+            );
+
+        player.velocityX *= friction;
+        player.velocityY *= friction;
     }
 
+    movePlayer(
+        player.velocityX * dt,
+        player.velocityY * dt
+    );
 
-    if (styleVisible) {
+    /*
+       Прыжок
+    */
 
-        styleTimer -= delta;
+    updateJump(dt);
+
+    /*
+       Стамина восстанавливается
+    */
+
+    player.stamina =
+        Math.min(
+            player.maxStamina,
+            player.stamina + 22 * dt
+        );
+
+    /*
+       Style
+    */
+
+    if (styleTimer > 0) {
+
+        styleTimer -= dt;
 
         if (styleTimer <= 0) {
 
-            hideStyle();
+            styleBox.style.display =
+                "none";
+
+            styleMultiplier = 1;
         }
+    }
+
+    /*
+       Враги
+    */
+
+    updateEnemies(dt);
+
+    /*
+       Смена оружия клавишей Q
+    */
+
+    if (keys["q"]) {
+
+        keys["q"] = false;
+
+        switchWeapon();
+    }
+
+    /*
+       Прыжок клавишей пробел
+    */
+
+    if (keys[" "]) {
+
+        keys[" "] = false;
+
+        jump();
     }
 }
 
+/* =========================================================
+   UI UPDATE
+========================================================= */
+
+function updateUI() {
+
+    const hpPercent =
+        Math.max(
+            0,
+            Math.min(
+                1,
+                player.hp / player.maxHp
+            )
+        );
+
+    const staminaPercent =
+        Math.max(
+            0,
+            Math.min(
+                1,
+                player.stamina / player.maxStamina
+            )
+        );
+
+    /*
+       270 градусов —
+       полукруглая шкала.
+    */
+
+    healthFill.style.background =
+        `conic-gradient(
+            #e7e7e7 ${hpPercent * 270}deg,
+            transparent ${hpPercent * 270}deg
+        )`;
+
+    staminaFill.style.background =
+        `conic-gradient(
+            #aaa ${staminaPercent * 270}deg,
+            transparent ${staminaPercent * 270}deg
+        )`;
+
+    healthText.textContent =
+        Math.ceil(player.hp);
+
+    staminaText.textContent =
+        Math.ceil(player.stamina);
+}
 
 /* =========================================================
    GAME LOOP
 ========================================================= */
 
-function loop(time) {
+let lastTime =
+    performance.now();
 
-    const delta =
+function gameLoop(time) {
+
+    const dt =
         Math.min(
-            50,
-            Math.max(
-                0,
-                time - lastTime
-            )
+            .033,
+            (time - lastTime) / 1000
         );
-
 
     lastTime = time;
 
-
-    update(delta);
+    update(dt);
 
     drawWorld();
 
-    drawSprites();
-
     drawWeapon();
 
+    updateUI();
 
-    requestAnimationFrame(loop);
+    requestAnimationFrame(gameLoop);
 }
 
+weaponName.textContent =
+    currentWeapon.name;
 
-/* =========================================================
-   START
-========================================================= */
+updateUI();
 
-player.currentSpeed = 0;
-
-styleBox.style.display = "none";
-
-requestAnimationFrame(loop);
+requestAnimationFrame(gameLoop);
