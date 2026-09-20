@@ -15,10 +15,16 @@ const ctx =
 function resizeCanvas() {
 
     canvas.width =
-        Math.max(320, window.innerWidth);
+        Math.max(
+            320,
+            window.innerWidth
+        );
 
     canvas.height =
-        Math.max(240, window.innerHeight);
+        Math.max(
+            240,
+            window.innerHeight
+        );
 }
 
 
@@ -34,45 +40,75 @@ resizeCanvas();
    UI
 ========================================================= */
 
-const joystick =
-    document.getElementById("joystick");
+const moveJoystick =
+    document.getElementById(
+        "moveJoystick"
+    );
 
-const stick =
-    document.getElementById("stick");
+const moveStick =
+    document.getElementById(
+        "moveStick"
+    );
+
+const lookJoystick =
+    document.getElementById(
+        "lookJoystick"
+    );
+
+const lookStick =
+    document.getElementById(
+        "lookStick"
+    );
 
 const shootButton =
-    document.getElementById("shootButton");
+    document.getElementById(
+        "shootButton"
+    );
+
+const jumpButton =
+    document.getElementById(
+        "jumpButton"
+    );
 
 const interactButton =
-    document.getElementById("interactButton");
+    document.getElementById(
+        "interactButton"
+    );
 
 const weaponButton =
-    document.getElementById("weaponButton");
+    document.getElementById(
+        "weaponButton"
+    );
 
 const weaponName =
-    document.getElementById("weaponName");
+    document.getElementById(
+        "weaponName"
+    );
 
-
-/* ВАЖНО:
-   Эти имена отличаются от игровых
-   переменных ниже.
-*/
 
 const styleBox =
-    document.getElementById("styleBox");
+    document.getElementById(
+        "styleBox"
+    );
 
 const styleRankElement =
-    document.getElementById("styleRank");
+    document.getElementById(
+        "styleRank"
+    );
 
 const styleMultiplierElement =
-    document.getElementById("styleMultiplier");
+    document.getElementById(
+        "styleMultiplier"
+    );
 
 const stylePointsElement =
-    document.getElementById("stylePoints");
+    document.getElementById(
+        "stylePoints"
+    );
 
 
 /* =========================================================
-   PNG КУЛАКОВ
+   FIST TEXTURES
 ========================================================= */
 
 const leftFist =
@@ -88,28 +124,36 @@ let rightFistReady =
     false;
 
 
-leftFist.onload = function () {
+leftFist.onload =
+    function () {
 
-    leftFistReady = true;
-};
-
-
-rightFist.onload = function () {
-
-    rightFistReady = true;
-};
+        leftFistReady =
+            true;
+    };
 
 
-leftFist.onerror = function () {
+rightFist.onload =
+    function () {
 
-    leftFistReady = false;
-};
+        rightFistReady =
+            true;
+    };
 
 
-rightFist.onerror = function () {
+leftFist.onerror =
+    function () {
 
-    rightFistReady = false;
-};
+        leftFistReady =
+            false;
+    };
+
+
+rightFist.onerror =
+    function () {
+
+        rightFistReady =
+            false;
+    };
 
 
 leftFist.src =
@@ -172,17 +216,23 @@ const player = {
     angle: 0,
 
     /*
-       Вертикальный угол камеры.
-       0 = прямо.
+       Вертикальный взгляд.
     */
 
     pitch: 0,
 
     /*
-       Текущая скорость.
+       Положение по высоте.
+       0 = земля.
     */
 
-    velocity: 0,
+    z: 0,
+
+    /*
+       Вертикальная скорость.
+    */
+
+    verticalVelocity: 0,
 
     /*
        Максимальная скорость.
@@ -191,19 +241,34 @@ const player = {
     maxSpeed: 5.5,
 
     /*
-       Скорость разгона.
+       Ускорение.
     */
 
-    acceleration: 7.0,
+    acceleration: 7,
 
     /*
-       Насколько быстро
-       персонаж останавливается.
+       Торможение.
     */
 
-    friction: 5.0,
+    friction: 5,
 
-    radius: .18
+    /*
+       Радиус столкновения.
+    */
+
+    radius: .18,
+
+    /*
+       Прыжок.
+    */
+
+    jumpPower: 5.2,
+
+    /*
+       Гравитация.
+    */
+
+    gravity: 14
 };
 
 
@@ -212,7 +277,7 @@ const player = {
 ========================================================= */
 
 const MAX_PITCH =
-    0.9;
+    .9;
 
 
 /* =========================================================
@@ -253,8 +318,8 @@ let enemies = [
 const lever = {
 
     x: 9,
-    y: 2
 
+    y: 2
 };
 
 
@@ -309,7 +374,9 @@ window.addEventListener(
     "keydown",
     function(e) {
 
-        keys[e.code] = true;
+        keys[e.code] =
+            true;
+
 
         if (
             e.code === "Space"
@@ -320,6 +387,7 @@ window.addEventListener(
             shoot();
         }
 
+
         if (
             e.code === "KeyE"
         ) {
@@ -327,11 +395,20 @@ window.addEventListener(
             interact();
         }
 
+
         if (
             e.code === "KeyQ"
         ) {
 
             switchWeapon();
+        }
+
+
+        if (
+            e.code === "KeyC"
+        ) {
+
+            jump();
         }
     }
 );
@@ -341,66 +418,45 @@ window.addEventListener(
     "keyup",
     function(e) {
 
-        keys[e.code] = false;
+        keys[e.code] =
+            false;
     }
 );
 
 
 /* =========================================================
-   STYLE RANK
+   STYLE
 ========================================================= */
 
 function getStyleRank() {
 
     if (
         styleScore >= 1800
-    ) {
-
-        return "SSS";
-    }
+    ) return "SSS";
 
     if (
         styleScore >= 1200
-    ) {
-
-        return "SS";
-    }
+    ) return "SS";
 
     if (
         styleScore >= 750
-    ) {
-
-        return "S";
-    }
+    ) return "S";
 
     if (
         styleScore >= 450
-    ) {
-
-        return "A";
-    }
+    ) return "A";
 
     if (
         styleScore >= 250
-    ) {
-
-        return "B";
-    }
+    ) return "B";
 
     if (
         styleScore >= 100
-    ) {
-
-        return "C";
-    }
+    ) return "C";
 
     return "D";
 }
 
-
-/* =========================================================
-   STYLE ACTION
-========================================================= */
 
 function addStyle(
     amount,
@@ -408,7 +464,8 @@ function addStyle(
 ) {
 
     if (
-        action !== lastStyleAction
+        action !==
+        lastStyleAction
     ) {
 
         styleCombo++;
@@ -445,8 +502,8 @@ function addStyle(
 
     styleScore =
         Math.min(
-            styleScore,
-            99999
+            99999,
+            styleScore
         );
 
 
@@ -470,26 +527,21 @@ function addStyle(
 }
 
 
-/* =========================================================
-   STYLE UI
-========================================================= */
-
 function updateStyleUI() {
 
     styleRankElement.textContent =
         getStyleRank();
 
     styleMultiplierElement.textContent =
-        "×" + styleMultiplier;
+        "×" +
+        styleMultiplier;
 
     stylePointsElement.textContent =
-        Math.floor(styleScore);
+        Math.floor(
+            styleScore
+        );
 }
 
-
-/* =========================================================
-   HIDE STYLE
-========================================================= */
 
 function hideStyle() {
 
@@ -517,7 +569,7 @@ function hideStyle() {
 
 
 /* =========================================================
-   WEAPONS
+   WEAPON
 ========================================================= */
 
 weaponButton.addEventListener(
@@ -725,13 +777,9 @@ function shotgun() {
     const spread = [
 
         -.08,
-
         -.04,
-
         0,
-
         .04,
-
         .08
 
     ];
@@ -792,7 +840,8 @@ function getTargetEnemy(
     offset = 0
 ) {
 
-    let result = null;
+    let result =
+        null;
 
     let closest =
         Infinity;
@@ -876,6 +925,52 @@ function getTargetEnemy(
 
 
 /* =========================================================
+   JUMP
+========================================================= */
+
+jumpButton.addEventListener(
+    "pointerdown",
+    function(e) {
+
+        e.preventDefault();
+
+        jump();
+    }
+);
+
+
+function jump() {
+
+    /*
+       Прыгать можно только
+       находясь на земле.
+    */
+
+    if (
+        player.z > 0.01
+    ) {
+
+        return;
+    }
+
+
+    player.verticalVelocity =
+        player.jumpPower;
+
+
+    /*
+       Небольшое стильное
+       действие за прыжок.
+    */
+
+    addStyle(
+        5,
+        "jump"
+    );
+}
+
+
+/* =========================================================
    INTERACT
 ========================================================= */
 
@@ -929,13 +1024,9 @@ function spawnEnemy() {
     const points = [
 
         {x:3,y:3},
-
         {x:8,y:3},
-
         {x:3,y:8},
-
         {x:8,y:8},
-
         {x:6,y:5}
 
     ];
@@ -989,15 +1080,20 @@ function spawnEnemy() {
 
             enemies.push({
 
-                x: point.x,
+                x:
+                    point.x,
 
-                y: point.y,
+                y:
+                    point.y,
 
-                hp: 100,
+                hp:
+                    100,
 
-                alive: true,
+                alive:
+                    true,
 
-                hit: 0
+                hit:
+                    0
             });
 
 
@@ -1014,84 +1110,90 @@ function spawnEnemy() {
 
 
 /* =========================================================
-   JOYSTICK
+   ЛЕВЫЙ ДЖОЙСТИК
+   ДВИЖЕНИЕ
 ========================================================= */
 
-let joystickActive =
+let moveJoyActive =
     false;
 
-let joyX = 0;
+let moveJoyX =
+    0;
 
-let joyY = 0;
+let moveJoyY =
+    0;
 
 
-joystick.addEventListener(
+moveJoystick.addEventListener(
     "pointerdown",
     function(e) {
 
         e.preventDefault();
 
-        joystickActive = true;
+        moveJoyActive =
+            true;
 
-        joystick.setPointerCapture(
+        moveJoystick.setPointerCapture(
             e.pointerId
         );
 
-        updateJoystick(e);
+        updateMoveJoystick(e);
     }
 );
 
 
-joystick.addEventListener(
+moveJoystick.addEventListener(
     "pointermove",
     function(e) {
 
         if (
-            !joystickActive
+            !moveJoyActive
         ) {
 
             return;
         }
 
-        updateJoystick(e);
+        updateMoveJoystick(e);
     }
 );
 
 
-joystick.addEventListener(
+moveJoystick.addEventListener(
     "pointerup",
-    resetJoystick
+    resetMoveJoystick
 );
 
 
-joystick.addEventListener(
+moveJoystick.addEventListener(
     "pointercancel",
-    resetJoystick
+    resetMoveJoystick
 );
 
 
-function resetJoystick() {
+function resetMoveJoystick() {
 
-    joystickActive =
+    moveJoyActive =
         false;
 
-    joyX = 0;
+    moveJoyX =
+        0;
 
-    joyY = 0;
+    moveJoyY =
+        0;
 
 
-    stick.style.left =
+    moveStick.style.left =
         "50%";
 
-    stick.style.top =
+    moveStick.style.top =
         "50%";
 }
 
 
-function updateJoystick(e) {
+function updateMoveJoystick(e) {
 
     const rect =
-        joystick.getBoundingClientRect();
+        moveJoystick.getBoundingClientRect();
 
 
     const centerX =
@@ -1114,7 +1216,7 @@ function updateJoystick(e) {
 
     const max =
         rect.width / 2 -
-        28;
+        26;
 
 
     const length =
@@ -1138,19 +1240,19 @@ function updateJoystick(e) {
     }
 
 
-    joyX =
+    moveJoyX =
         x / max;
 
-    joyY =
+    moveJoyY =
         y / max;
 
 
-    stick.style.left =
+    moveStick.style.left =
         "calc(50% + " +
         x +
         "px)";
 
-    stick.style.top =
+    moveStick.style.top =
         "calc(50% + " +
         y +
         "px)";
@@ -1158,132 +1260,153 @@ function updateJoystick(e) {
 
 
 /* =========================================================
-   LOOK
-   ПРАВАЯ ЧАСТЬ ЭКРАНА
+   ПРАВЫЙ ДЖОЙСТИК
+   КАМЕРА
 ========================================================= */
 
-let lookActive =
+let lookJoyActive =
     false;
 
-let lastLookX = 0;
+let lookJoyX =
+    0;
 
-let lastLookY = 0;
+let lookJoyY =
+    0;
 
 
-canvas.addEventListener(
+lookJoystick.addEventListener(
     "pointerdown",
     function(e) {
 
-        /*
-           Левая часть занята
-           джойстиком.
-        */
+        e.preventDefault();
 
-        if (
-            e.clientX <
-            window.innerWidth * .45
-        ) {
-
-            return;
-        }
-
-
-        lookActive =
+        lookJoyActive =
             true;
 
-
-        lastLookX =
-            e.clientX;
-
-        lastLookY =
-            e.clientY;
-
-
-        canvas.setPointerCapture(
+        lookJoystick.setPointerCapture(
             e.pointerId
         );
+
+        updateLookJoystick(e);
     }
 );
 
 
-canvas.addEventListener(
+lookJoystick.addEventListener(
     "pointermove",
     function(e) {
 
         if (
-            !lookActive
+            !lookJoyActive
         ) {
 
             return;
         }
 
-
-        const dx =
-            e.clientX -
-            lastLookX;
-
-        const dy =
-            e.clientY -
-            lastLookY;
-
-
-        /*
-           ПОВОРОТ ВЛЕВО / ВПРАВО
-        */
-
-        player.angle +=
-            dx * .006;
-
-
-        /*
-           СМОТРЕТЬ ВВЕРХ / ВНИЗ
-        */
-
-        player.pitch +=
-            dy * .006;
-
-
-        /*
-           Ограничение взгляда.
-        */
-
-        player.pitch =
-            Math.max(
-                -MAX_PITCH,
-                Math.min(
-                    MAX_PITCH,
-                    player.pitch
-                )
-            );
-
-
-        lastLookX =
-            e.clientX;
-
-        lastLookY =
-            e.clientY;
+        updateLookJoystick(e);
     }
 );
 
 
-canvas.addEventListener(
+lookJoystick.addEventListener(
     "pointerup",
-    function() {
-
-        lookActive =
-            false;
-    }
+    resetLookJoystick
 );
 
 
-canvas.addEventListener(
+lookJoystick.addEventListener(
     "pointercancel",
-    function() {
-
-        lookActive =
-            false;
-    }
+    resetLookJoystick
 );
+
+
+function resetLookJoystick() {
+
+    lookJoyActive =
+        false;
+
+    lookJoyX =
+        0;
+
+    lookJoyY =
+        0;
+
+
+    lookStick.style.left =
+        "50%";
+
+    lookStick.style.top =
+        "50%";
+}
+
+
+function updateLookJoystick(e) {
+
+    const rect =
+        lookJoystick.getBoundingClientRect();
+
+
+    const centerX =
+        rect.left +
+        rect.width / 2;
+
+    const centerY =
+        rect.top +
+        rect.height / 2;
+
+
+    let x =
+        e.clientX -
+        centerX;
+
+    let y =
+        e.clientY -
+        centerY;
+
+
+    const max =
+        rect.width / 2 -
+        26;
+
+
+    const length =
+        Math.sqrt(
+            x * x +
+            y * y
+        );
+
+
+    if (
+        length > max
+    ) {
+
+        x =
+            x / length *
+            max;
+
+        y =
+            y / length *
+            max;
+    }
+
+
+    lookJoyX =
+        x / max;
+
+    lookJoyY =
+        y / max;
+
+
+    lookStick.style.left =
+        "calc(50% + " +
+        x +
+        "px)";
+
+    lookStick.style.top =
+        "calc(50% + " +
+        y +
+        "px)";
+}
 
 
 /* =========================================================
@@ -1295,18 +1418,18 @@ function isWall(
     y
 ) {
 
-    const mx =
+    const mapX =
         Math.floor(x);
 
-    const my =
+    const mapY =
         Math.floor(y);
 
 
     if (
-        mx < 0 ||
-        my < 0 ||
-        mx >= MAP_W ||
-        my >= MAP_H
+        mapX < 0 ||
+        mapY < 0 ||
+        mapX >= MAP_W ||
+        mapY >= MAP_H
     ) {
 
         return true;
@@ -1314,13 +1437,13 @@ function isWall(
 
 
     return (
-        map[my][mx] === "#"
+        map[mapY][mapX] === "#"
     );
 }
 
 
 /* =========================================================
-   MOVEMENT WITH ACCELERATION
+   MOVEMENT
 ========================================================= */
 
 function movePlayer(
@@ -1328,10 +1451,10 @@ function movePlayer(
 ) {
 
     let forward =
-        -joyY;
+        -moveJoyY;
 
     let strafe =
-        joyX;
+        moveJoyX;
 
 
     if (
@@ -1378,17 +1501,12 @@ function movePlayer(
 
 
     /*
-       Есть управление —
-       набираем скорость.
+       Есть движение.
     */
 
     if (
         inputLength > .05
     ) {
-
-        /*
-           Нормализация направления.
-        */
 
         forward /=
             Math.max(
@@ -1404,39 +1522,54 @@ function movePlayer(
 
 
         /*
-           Ускорение.
+           Разгон.
         */
 
-        player.velocity +=
+        player.maxSpeed =
+            5.5;
+
+
+        player.currentSpeed =
+            player.currentSpeed ||
+            0;
+
+
+        player.currentSpeed +=
             player.acceleration *
             delta /
             1000;
 
 
-        player.velocity =
+        player.currentSpeed =
             Math.min(
-                player.velocity,
+                player.currentSpeed,
                 player.maxSpeed
             );
 
-    } else {
+    }
+
+    else {
 
         /*
-           Если отпустил управление —
-           постепенно тормозим.
+           Торможение.
         */
 
-        player.velocity -=
+        player.currentSpeed =
+            player.currentSpeed ||
+            0;
+
+
+        player.currentSpeed -=
             player.friction *
             delta /
             1000;
 
 
         if (
-            player.velocity < 0
+            player.currentSpeed < 0
         ) {
 
-            player.velocity =
+            player.currentSpeed =
                 0;
         }
 
@@ -1445,12 +1578,8 @@ function movePlayer(
     }
 
 
-    /*
-       Скорость движения.
-    */
-
     const speed =
-        player.velocity *
+        player.currentSpeed *
         delta /
         1000;
 
@@ -1483,10 +1612,6 @@ function movePlayer(
         speed;
 
 
-    /*
-       Коллизия X.
-    */
-
     if (
         !isWall(
             player.x +
@@ -1502,10 +1627,6 @@ function movePlayer(
             dx;
     }
 
-
-    /*
-       Коллизия Y.
-    */
 
     if (
         !isWall(
@@ -1525,7 +1646,104 @@ function movePlayer(
 
 
 /* =========================================================
-   RAY
+   CAMERA
+========================================================= */
+
+function updateCamera(
+    delta
+) {
+
+    /*
+       Правый джойстик X:
+       поворот влево/вправо.
+    */
+
+    player.angle +=
+        lookJoyX *
+        2.8 *
+        delta /
+        1000;
+
+
+    /*
+       Правый джойстик Y:
+       вверх/вниз.
+
+       Инверсия:
+       двигаем джойстик вверх —
+       смотрим вверх.
+    */
+
+    player.pitch +=
+        lookJoyY *
+        .95 *
+        delta /
+        1000;
+
+
+    player.pitch =
+        Math.max(
+            -MAX_PITCH,
+
+            Math.min(
+                MAX_PITCH,
+                player.pitch
+            )
+        );
+}
+
+
+/* =========================================================
+   JUMP / GRAVITY
+========================================================= */
+
+function updateJump(
+    delta
+) {
+
+    const dt =
+        delta / 1000;
+
+
+    /*
+       Гравитация.
+    */
+
+    if (
+        player.z > 0 ||
+        player.verticalVelocity > 0
+    ) {
+
+        player.verticalVelocity -=
+            player.gravity *
+            dt;
+
+
+        player.z +=
+            player.verticalVelocity *
+            dt;
+    }
+
+
+    /*
+       Земля.
+    */
+
+    if (
+        player.z <= 0
+    ) {
+
+        player.z =
+            0;
+
+        player.verticalVelocity =
+            0;
+    }
+}
+
+
+/* =========================================================
+   RAYCAST
 ========================================================= */
 
 function castRay(
@@ -1539,7 +1757,8 @@ function castRay(
         Math.cos(angle);
 
 
-    let distance = 0;
+    let distance =
+        0;
 
 
     while (
@@ -1593,25 +1812,30 @@ function drawWorld() {
 
 
     /*
-       Вертикальное смещение
-       камеры.
+       Высота камеры.
 
-       pitch > 0:
-       смотрим вниз.
-
-       pitch < 0:
-       смотрим вверх.
+       Прыжок теперь реально
+       сдвигает мир вниз/вверх.
     */
+
+    const jumpCamera =
+        player.z *
+        h *
+        .10;
+
 
     const horizon =
         h / 2 +
+
         player.pitch *
         h *
-        .45;
+        .45 -
+
+        jumpCamera;
 
 
     /*
-       Небо
+       НЕБО
     */
 
     ctx.fillStyle =
@@ -1621,12 +1845,15 @@ function drawWorld() {
         0,
         0,
         w,
-        horizon
+        Math.max(
+            horizon,
+            0
+        )
     );
 
 
     /*
-       Пол
+       ПОЛ
     */
 
     ctx.fillStyle =
@@ -1634,9 +1861,12 @@ function drawWorld() {
 
     ctx.fillRect(
         0,
-        horizon,
+        Math.max(
+            horizon,
+            0
+        ),
         w,
-        h - horizon
+        h
     );
 
 
@@ -1676,20 +1906,12 @@ function drawWorld() {
             );
 
 
-        /*
-           Убираем fisheye.
-        */
-
         distance *=
             Math.cos(
                 rayAngle -
                 player.angle
             );
 
-
-        /*
-           Высота стены.
-        */
 
         const wallHeight =
             h /
@@ -1698,12 +1920,6 @@ function drawWorld() {
                 .001
             );
 
-
-        /*
-           ВАЖНО:
-           wallTop и wallBottom
-           теперь зависят от pitch.
-        */
 
         const wallTop =
             horizon -
@@ -1840,11 +2056,20 @@ function drawEnemy(
         canvas.height;
 
 
+    const jumpCamera =
+        player.z *
+        h *
+        .10;
+
+
     const horizon =
         h / 2 +
+
         player.pitch *
         h *
-        .45;
+        .45 -
+
+        jumpCamera;
 
 
     const screenX =
@@ -1893,10 +2118,6 @@ function drawEnemy(
             : "#888888";
 
 
-    /*
-       Тело.
-    */
-
     ctx.fillRect(
 
         screenX -
@@ -1909,10 +2130,6 @@ function drawEnemy(
         bodyHeight
     );
 
-
-    /*
-       Голова.
-    */
 
     ctx.beginPath();
 
@@ -1936,7 +2153,7 @@ function drawEnemy(
 
 
     /*
-       HP.
+       HP
     */
 
     ctx.fillStyle =
@@ -2051,11 +2268,20 @@ function drawLever() {
         canvas.height;
 
 
+    const jumpCamera =
+        player.z *
+        h *
+        .10;
+
+
     const horizon =
         h / 2 +
+
         player.pitch *
         h *
-        .45;
+        .45 -
+
+        jumpCamera;
 
 
     const x =
@@ -2153,7 +2379,8 @@ function drawWeapon() {
         canvas.height;
 
 
-    let recoil = 0;
+    let recoil =
+        0;
 
 
     if (
@@ -2172,6 +2399,18 @@ function drawWeapon() {
     }
 
 
+    const cameraY =
+        player.pitch *
+        h *
+        .18;
+
+
+    const jumpY =
+        player.z *
+        h *
+        .06;
+
+
     if (
         weapon === "fists"
     ) {
@@ -2179,25 +2418,35 @@ function drawWeapon() {
         drawFists(
             w,
             h,
-            recoil
+            recoil,
+            cameraY,
+            jumpY
         );
 
-    } else if (
+    }
+
+    else if (
         weapon === "pistol"
     ) {
 
         drawPistol(
             w,
             h,
-            recoil
+            recoil,
+            cameraY,
+            jumpY
         );
 
-    } else {
+    }
+
+    else {
 
         drawShotgun(
             w,
             h,
-            recoil
+            recoil,
+            cameraY,
+            jumpY
         );
     }
 }
@@ -2210,29 +2459,22 @@ function drawWeapon() {
 function drawFists(
     w,
     h,
-    punch
+    punch,
+    cameraY,
+    jumpY
 ) {
 
     const size =
-        Math.min(w, h) *
-        .34;
-
-
-    /*
-       Оружие тоже немного
-       двигается вместе
-       с вертикальным обзором.
-    */
-
-    const cameraY =
-        player.pitch *
-        h *
-        .18;
+        Math.min(
+            w,
+            h
+        ) * .34;
 
 
     const y =
         h * .68 -
         cameraY -
+        jumpY -
         punch *
         h *
         .12;
@@ -2268,7 +2510,8 @@ function drawFists(
 
 
         ctx.rotate(
-            -punch * .12
+            -punch *
+            .12
         );
 
 
@@ -2323,7 +2566,8 @@ function drawFists(
 
 
         ctx.rotate(
-            punch * .12
+            punch *
+            .12
         );
 
 
@@ -2437,26 +2681,25 @@ function drawFallbackFist(
 function drawPistol(
     w,
     h,
-    recoil
+    recoil,
+    cameraY,
+    jumpY
 ) {
 
     const cx =
         w / 2;
 
 
-    const cameraY =
-        player.pitch *
-        h *
-        .18;
-
-
     ctx.save();
 
 
     ctx.translate(
+
         0,
+
         recoil * 35 -
-        cameraY
+        cameraY -
+        jumpY
     );
 
 
@@ -2577,26 +2820,25 @@ function drawPistol(
 function drawShotgun(
     w,
     h,
-    recoil
+    recoil,
+    cameraY,
+    jumpY
 ) {
 
     const cx =
         w / 2;
 
 
-    const cameraY =
-        player.pitch *
-        h *
-        .18;
-
-
     ctx.save();
 
 
     ctx.translate(
+
         0,
+
         recoil * 45 -
-        cameraY
+        cameraY -
+        jumpY
     );
 
 
@@ -2767,6 +3009,16 @@ function update(
     );
 
 
+    updateCamera(
+        delta
+    );
+
+
+    updateJump(
+        delta
+    );
+
+
     if (
         weaponAnimation > 0
     ) {
@@ -2823,12 +3075,6 @@ function update(
     }
 
 
-    /*
-       Style исчезает через
-       10 секунд после последнего
-       стильного действия.
-    */
-
     if (
         styleVisible
     ) {
@@ -2848,7 +3094,7 @@ function update(
 
 
 /* =========================================================
-   MAIN LOOP
+   LOOP
 ========================================================= */
 
 function loop(time) {
@@ -2889,6 +3135,14 @@ function loop(time) {
 
 styleBox.style.display =
     "none";
+
+
+/*
+   Текущая скорость игрока.
+*/
+
+player.currentSpeed =
+    0;
 
 
 requestAnimationFrame(
