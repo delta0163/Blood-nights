@@ -43,7 +43,9 @@ body {
 }
 
 
-/* ПРИЦЕЛ */
+/* =========================
+   ПРИЦЕЛ
+========================= */
 
 #crosshair {
 
@@ -68,12 +70,14 @@ body {
     pointer-events: none;
 
     text-shadow:
-        1px 1px 3px black,
-        -1px -1px 3px black;
+        1px 1px 3px #000,
+        -1px -1px 3px #000;
 }
 
 
-/* STYLE */
+/* =========================
+   STYLE
+========================= */
 
 #styleBox {
 
@@ -97,7 +101,7 @@ body {
     pointer-events: none;
 
     text-shadow:
-        2px 2px 4px black;
+        2px 2px 4px #000;
 
     display: none;
 }
@@ -135,7 +139,9 @@ body {
 }
 
 
-/* ОРУЖИЕ */
+/* =========================
+   ОРУЖИЕ
+========================= */
 
 #weaponName {
 
@@ -160,31 +166,19 @@ body {
     pointer-events: none;
 
     text-shadow:
-        2px 2px 4px black;
+        2px 2px 4px #000;
 }
 
 
-/* КОНТРОЛЫ */
+/* =========================
+   ДЖОЙСТИКИ
+========================= */
 
-#controls {
+#moveJoystick,
+#lookJoystick {
 
     position: fixed;
 
-    inset: 0;
-
-    z-index: 20;
-
-    pointer-events: none;
-}
-
-
-/* ДЖОЙСТИК */
-
-#joystick {
-
-    position: absolute;
-
-    left: 25px;
     bottom: 25px;
 
     width: 120px;
@@ -194,15 +188,35 @@ body {
 
     border:
         3px solid
-        rgba(255,255,255,.5);
+        rgba(255,255,255,.45);
 
     background:
-        rgba(50,50,50,.35);
+        rgba(40,40,40,.35);
+
+    z-index: 30;
 
     pointer-events: auto;
 }
 
-#stick {
+
+/* Левый */
+
+#moveJoystick {
+
+    left: 25px;
+}
+
+
+/* Правый */
+
+#lookJoystick {
+
+    right: 25px;
+}
+
+
+#moveStick,
+#lookStick {
 
     position: absolute;
 
@@ -219,6 +233,26 @@ body {
 
     background:
         rgba(220,220,220,.7);
+
+    border:
+        2px solid
+        rgba(255,255,255,.5);
+}
+
+
+/* =========================
+   КНОПКИ
+========================= */
+
+#controls {
+
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 40;
+
+    pointer-events: none;
 }
 
 
@@ -228,11 +262,11 @@ body {
 
     position: absolute;
 
-    right: 25px;
-    bottom: 25px;
+    right: 165px;
+    bottom: 32px;
 
-    width: 95px;
-    height: 95px;
+    width: 92px;
+    height: 92px;
 
     border-radius: 50%;
 
@@ -243,30 +277,22 @@ body {
 
     color: white;
 
-    font-size: 15px;
+    font-size: 14px;
 
     font-weight: bold;
 
     pointer-events: auto;
 }
 
-#shootButton:active {
 
-    transform: scale(.9);
+/* ПРЫЖОК */
 
-    background:
-        rgba(130,130,130,.8);
-}
-
-
-/* E */
-
-#interactButton {
+#jumpButton {
 
     position: absolute;
 
-    right: 135px;
-    bottom: 40px;
+    right: 165px;
+    bottom: 140px;
 
     width: 65px;
     height: 65px;
@@ -280,7 +306,36 @@ body {
 
     color: white;
 
-    font-size: 22px;
+    font-size: 28px;
+
+    font-weight: bold;
+
+    pointer-events: auto;
+}
+
+
+/* E */
+
+#interactButton {
+
+    position: absolute;
+
+    right: 270px;
+    bottom: 48px;
+
+    width: 60px;
+    height: 60px;
+
+    border-radius: 50%;
+
+    border: 2px solid white;
+
+    background:
+        rgba(40,40,40,.75);
+
+    color: white;
+
+    font-size: 21px;
 
     font-weight: bold;
 
@@ -294,13 +349,13 @@ body {
 
     position: absolute;
 
-    right: 25px;
-    bottom: 135px;
+    right: 165px;
+    bottom: 220px;
 
-    width: 95px;
-    height: 45px;
+    width: 92px;
+    height: 42px;
 
-    border-radius: 12px;
+    border-radius: 11px;
 
     border: 2px solid white;
 
@@ -309,7 +364,7 @@ body {
 
     color: white;
 
-    font-size: 11px;
+    font-size: 10px;
 
     font-weight: bold;
 
@@ -317,33 +372,85 @@ body {
 }
 
 
-@media (max-width: 600px) {
+/* Нажатие */
 
-    #joystick {
+button:active {
 
-        width: 110px;
-        height: 110px;
+    transform: scale(.9);
+
+    background:
+        rgba(120,120,120,.8);
+}
+
+
+/* =========================
+   МОБИЛЬНЫЕ РАЗМЕРЫ
+========================= */
+
+@media (max-width: 700px) {
+
+    #moveJoystick,
+    #lookJoystick {
+
+        width: 105px;
+        height: 105px;
+
+        bottom: 20px;
+    }
+
+    #moveJoystick {
+
+        left: 15px;
+    }
+
+    #lookJoystick {
+
+        right: 15px;
+    }
+
+    #moveStick,
+    #lookStick {
+
+        width: 46px;
+        height: 46px;
+
+        margin-left: -23px;
+        margin-top: -23px;
     }
 
     #shootButton {
 
-        width: 88px;
-        height: 88px;
+        right: 130px;
+        bottom: 22px;
+
+        width: 82px;
+        height: 82px;
     }
 
-    #weaponButton {
+    #jumpButton {
 
-        bottom: 125px;
+        right: 130px;
+        bottom: 120px;
+
+        width: 58px;
+        height: 58px;
     }
 
     #interactButton {
 
-        right: 125px;
+        right: 225px;
+        bottom: 35px;
+
+        width: 55px;
+        height: 55px;
     }
 
-    #styleBox {
+    #weaponButton {
 
-        right: 12px;
-        top: 12px;
+        right: 130px;
+        bottom: 190px;
+
+        width: 82px;
+        height: 40px;
     }
 }
