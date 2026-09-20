@@ -2,15 +2,10 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-
     <meta name="viewport"
-          content="width=device-width,
-          initial-scale=1.0,
-          maximum-scale=1.0,
-          user-scalable=no">
-
-    <title>2.5D FPS</title>
-
+          content="width=device-width, initial-scale=1.0,
+                   maximum-scale=1.0, user-scalable=no">
+    <title>2.5D FPS Test</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -18,8 +13,59 @@
 
 <canvas id="game"></canvas>
 
+<!-- Прицел -->
 <div id="crosshair">+</div>
 
+<!-- Меню улучшений -->
+<div id="upgradeMenu">
+    <div class="upgradePanel">
+        <div class="upgradeTitle">ВЫБЕРИ УЛУЧШЕНИЕ</div>
+
+        <button class="upgrade" data-upgrade="doubleJump">
+            <b>ДВОЙНОЙ ПРЫЖОК</b>
+            <span>Позволяет прыгнуть второй раз в воздухе</span>
+        </button>
+
+        <button class="upgrade" data-upgrade="dash">
+            <b>РЫВОК</b>
+            <span>Нажми SHIFT или кнопку РЫВОК</span>
+        </button>
+
+        <button class="upgrade" data-upgrade="stamina">
+            <b>УСИЛЕННАЯ СТАМИНА</b>
+            <span>Максимальная стамина увеличивается до 150</span>
+        </button>
+
+        <button class="upgrade" data-upgrade="health">
+            <b>УСИЛЕННОЕ HP</b>
+            <span>Максимальное HP увеличивается до 150</span>
+        </button>
+    </div>
+</div>
+
+<!-- HP -->
+<div id="healthUI">
+    <div class="arcOuter">
+        <div class="arcFill" id="healthFill"></div>
+        <div class="arcInner">
+            <span id="healthText">100</span>
+            <small>HP</small>
+        </div>
+    </div>
+</div>
+
+<!-- STAMINA -->
+<div id="staminaUI">
+    <div class="arcOuter">
+        <div class="arcFill" id="staminaFill"></div>
+        <div class="arcInner">
+            <span id="staminaText">100</span>
+            <small>STA</small>
+        </div>
+    </div>
+</div>
+
+<!-- STYLE -->
 <div id="styleBox">
     <div id="styleTitle">STYLE</div>
     <div id="styleRank">D</div>
@@ -29,37 +75,31 @@
 
 <div id="weaponName">КУЛАКИ</div>
 
-<!-- ЛЕВЫЙ ДЖОЙСТИК -->
+<!-- Левый джойстик -->
 <div id="moveJoystick">
     <div id="moveStick"></div>
 </div>
 
-<!-- ПРАВЫЙ ДЖОЙСТИК -->
+<!-- Правый джойстик -->
 <div id="lookJoystick">
     <div id="lookStick"></div>
 </div>
 
+<!-- Кнопки -->
 <div id="controls">
 
-    <button id="jumpButton">
-        ↑
-    </button>
+    <button id="jumpButton">↑</button>
 
-    <button id="shootButton">
-        ОГОНЬ
-    </button>
+    <button id="dashButton">РЫВОК</button>
 
-    <button id="interactButton">
-        E
-    </button>
+    <button id="shootButton">ОГОНЬ</button>
 
-    <button id="weaponButton">
-        ОРУЖИЕ
-    </button>
+    <button id="interactButton">E</button>
+
+    <button id="weaponButton">ОРУЖИЕ</button>
 
 </div>
 
 <script src="game.js"></script>
-
 </body>
 </html>
